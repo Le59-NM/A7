@@ -90,6 +90,19 @@
   .btn:active{transform:scale(.96);}
   .btn.primary{color:#1a1200;background:linear-gradient(95deg,#ffd23f,#ffe680);box-shadow:0 6px 20px rgba(255,210,63,.4);}
   .btn.ghost{color:#fff;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.4);backdrop-filter:blur(4px);}
+  #pauseBtn{position:absolute;top:calc(10px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:60;width:36px;height:36px;border-radius:50%;border:1.5px solid rgba(255,255,255,.28);background:rgba(10,14,8,.52);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;cursor:pointer;pointer-events:auto;}
+  #pauseBtn.on{display:flex;}
+  #pauseBtn:active{transform:translateX(-50%) scale(.93);}
+  #pause{justify-content:center;gap:18px;padding:26px;}
+  .pmenu{position:relative;display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center;pointer-events:auto;width:100%;max-width:360px;}
+  .ptitle{font-size:32px;font-weight:900;color:#fff;letter-spacing:.06em;text-shadow:0 3px 14px rgba(0,0,0,.7);}
+  .prow{width:100%;display:flex;flex-direction:column;gap:8px;align-items:center;}
+  .plabel{font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:#c7d0bd;text-shadow:0 1px 3px rgba(0,0,0,.8);}
+  .ghost-tag{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#7bdcff;background:rgba(120,220,255,.1);border:1px solid rgba(120,220,255,.3);border-radius:20px;padding:3px 10px;display:none;}
+  .ghost-tag.on{display:inline-block;}
+  .ghost-hud{position:absolute;top:calc(44px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:#7bdcff;background:rgba(0,0,0,.45);border:1px solid rgba(120,220,255,.35);border-radius:20px;padding:3px 10px;pointer-events:none;display:none;}
+  .ghost-hud.on{display:block;}
+  .seg button[data-d="ghost"].sel{background:rgba(120,220,255,.2);color:#7bdcff;border-color:rgba(120,220,255,.7);box-shadow:0 4px 14px rgba(120,220,255,.2);}
 </style>
 </head>
 <body>
@@ -118,6 +131,7 @@
         <button data-d="chill">Chill</button>
         <button data-d="normal" class="sel">Normal</button>
         <button data-d="brutal">Brutal</button>
+        <button data-d="ghost">Ghost</button>
       </div>
       <button class="play" id="play">Losfahren</button>
       <button class="play ghost2" id="shopBtn">Shop · Autos</button>
@@ -153,6 +167,33 @@
     </div>
   </div>
   <button id="mute" aria-label="Ton"></button>
+  <button id="pauseBtn" aria-label="Pause"><svg width="14" height="14" viewBox="0 0 14 14" fill="#fff"><rect x="2" y="1" width="4" height="12" rx="1.5"/><rect x="8" y="1" width="4" height="12" rx="1.5"/></svg></button>
+  <div class="ghost-hud" id="ghostHud">GHOST MODE</div>
+
+  <div class="screen hidden" id="pause">
+    <div class="veil"></div>
+    <div class="pmenu">
+      <div class="ptitle">Pause</div>
+      <div class="prow">
+        <div class="plabel">Schwierigkeit</div>
+        <div class="seg" id="pseg">
+          <button data-d="chill">Chill</button>
+          <button data-d="normal">Normal</button>
+          <button data-d="brutal">Brutal</button>
+          <button data-d="ghost">Ghost</button>
+        </div>
+        <div class="ghost-tag" id="ghostTag">Kein Crash-Modus</div>
+      </div>
+      <div class="prow">
+        <div class="plabel">Sound</div>
+        <button class="btn ghost" id="pmuteBtn" style="width:100%">Ton aus</button>
+      </div>
+      <div class="btnrow">
+        <button class="btn ghost" id="ptoMenu">Menü</button>
+        <button class="btn primary" id="resumeBtn">Weiterfahren</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -453,8 +494,9 @@ const ROUTE=[
   {name:'Füssen',type:'open',len:1400},
   {name:'Grenztunnel',type:'tunnel',len:1800},
 ];
-const DIFF={chill:{base:5,ramp:0.0006,gap:92},normal:{base:6,ramp:0.0009,gap:80},brutal:{base:7.5,ramp:0.0014,gap:62}};
+const DIFF={chill:{base:5,ramp:0.0006,gap:92},normal:{base:6,ramp:0.0009,gap:80},brutal:{base:7.5,ramp:0.0014,gap:62},ghost:{base:6,ramp:0.0009,gap:80}};
 let diff='normal';
+let paused=false;
 let state='menu',score=0,best=0,speed=6,scroll=0,spawnTimer=0;
 let player,enemies=[],signs=[],segIndex=0,segStart=0,tunnelAmt=0;
 let pickups=[],particles=[],floats=[],pickupTimer=160,freeUntil=0,flash=0,fc=0;
@@ -476,7 +518,10 @@ function resetRun(){score=0;speed=DIFF[diff].base;scroll=0;spawnTimer=0;enemies=
 /* ============ input ============ */
 function move(d){if(state!=='play'||player.ctrl>0)return;const pl=player.lane;player.lane=Math.max(0,Math.min(LANES-1,player.lane+d));if(player.lane!==pl){player.targetX=lanes[player.lane];AU.lane();}}
 cv.addEventListener('pointerdown',e=>{const x=e.clientX-cv.getBoundingClientRect().left;move(x<W/2?-1:1);});
-window.addEventListener('keydown',e=>{if(e.key==='ArrowLeft')move(-1);if(e.key==='ArrowRight')move(1);});
+window.addEventListener('keydown',e=>{
+  if(e.key==='Escape'||e.key==='p'||e.key==='P'){if(paused)resumeGame();else pauseGame();}
+  if(e.key==='ArrowLeft')move(-1);if(e.key==='ArrowRight')move(1);
+});
 
 /* ============ spawn ============ */
 function spawn(ambient){
@@ -543,6 +588,7 @@ function blitVehicle(e){
 }
 function drawPlayerCar(){
   const w=carW(),h=carH(),x=player.x,y=player.y;
+  if(diff==='ghost'){ctx.save();ctx.globalAlpha=0.52;}
   // Scheinwerfer-Kegel
   if(tunnelAmt>0.12){ctx.save();ctx.globalCompositeOperation='lighter';
     [[-0.22],[0.22]].forEach(([o])=>{const cx=x+w*o;const g=ctx.createRadialGradient(cx,y-h*0.4,2,cx,y-h*2.6,w*1.6);
@@ -559,6 +605,7 @@ function drawPlayerCar(){
       ? buildSkinSprite({kind:carDef(sel).kind,color:'#7a2233'},Math.round(carW()*SS),Math.round(carH()*SS))
       : buildSkinSprite(carDef(sel),Math.round(carW()*SS),Math.round(carH()*SS)));
   ctx.save();ctx.translate(x,y);ctx.rotate(player.wob);ctx.scale(sc,sc);ctx.drawImage(s,-w/2,-h/2,w,h);ctx.restore();
+  if(diff==='ghost')ctx.restore();
 }
 function drawGuardrail(side){
   const x=side==='L'?roadX-3:roadX+roadW;
@@ -679,6 +726,12 @@ function postFX(){
 /* ============ loop ============ */
 function frame(){
   requestAnimationFrame(frame);
+  if(paused){
+    ctx.clearRect(0,0,W,H);drawWorld();
+    for(const s of signs)drawSign(s);for(const p of pickups)drawPickup(p);
+    for(const e of enemies)blitVehicle(e);drawPlayerCar();drawParticles();drawFloats();drawFreeBar();postFX();
+    return;
+  }
   const cfg=DIFF[diff];
   speed=(state==='play')?cfg.base+score*cfg.ramp:4.2;
   scroll+=speed; fc++;
@@ -705,7 +758,7 @@ function frame(){
     if(--pickupTimer<=0){pickupTimer=180+(Math.random()*160|0);spawnPickup();}
     const h=carH(), invuln=player.air>0||score<freeUntil;
     for(const e of enemies){e.y+=eff;const eh=h*(e.truck?2.35:1);
-      if(!invuln&&Math.abs(e.x-player.x)<carW()*0.6&&Math.abs(e.y-player.y)<(eh+h)/2*0.82){crash();return;}}
+      if(diff!=='ghost'&&!invuln&&Math.abs(e.x-player.x)<carW()*0.6&&Math.abs(e.y-player.y)<(eh+h)/2*0.82){crash();return;}}
     enemies=enemies.filter(e=>e.y<H+h*3);
     for(const p of pickups){p.y+=eff;
       if(!p.done&&player.air<=0&&Math.abs(p.x-player.x)<carW()*0.62&&Math.abs(p.y-player.y)<h*0.7){p.done=true;trigger(p.type);}}
@@ -734,7 +787,8 @@ function frame(){
   drawFreeBar();
   postFX();
 }
-function crash(){state='over';best=Math.max(best,score);AU.engineStop();AU.crash();
+function crash(){paused=false;state='over';best=Math.max(best,score);AU.engineStop();AU.crash();
+  document.getElementById('pauseBtn').classList.remove('on');document.getElementById('ghostHud').classList.remove('on');document.getElementById('pause').classList.add('hidden');
   const earned=Math.floor(score/2);coins+=earned;Store.save();
   document.getElementById('finalScore').textContent=kmTxt(score);document.getElementById('finalBest').textContent=kmTxt(best);
   document.getElementById('earned').textContent='+'+earned.toLocaleString('de-DE')+' Coins';
@@ -750,8 +804,8 @@ function crash(){state='over';best=Math.max(best,score);AU.engineStop();AU.crash
   if(km>250)v='Grenztunnel erreicht – absolut legendär!';
   document.getElementById('verdict').textContent=v;
   document.getElementById('hud').classList.remove('on');document.getElementById('place').classList.remove('on');document.getElementById('speedoBox').classList.remove('on');document.getElementById('over').classList.remove('hidden');}
-function startGame(){AU.resume();AU.click();resetRun();state='play';AU.engineStart();document.getElementById('menu').classList.add('hidden');document.getElementById('over').classList.add('hidden');document.getElementById('hud').classList.add('on');document.getElementById('place').classList.add('on');document.getElementById('speedoBox').classList.add('on');}
-function toMenu(){AU.engineStop();AU.click();state='menu';enemies=[];signs=[];pickups=[];particles=[];floats=[];tunnelAmt=0;player=newPlayer();player.x=player.targetX=lanes[1];player.y=H-carH()*1.7;refreshMenuStats();document.getElementById('speedoBox').classList.remove('on');document.getElementById('over').classList.add('hidden');document.getElementById('menu').classList.remove('hidden');}
+function startGame(){AU.resume();AU.click();resetRun();state='play';paused=false;AU.engineStart();document.getElementById('menu').classList.add('hidden');document.getElementById('over').classList.add('hidden');document.getElementById('pause').classList.add('hidden');document.getElementById('hud').classList.add('on');document.getElementById('place').classList.add('on');document.getElementById('speedoBox').classList.add('on');document.getElementById('pauseBtn').classList.add('on');document.getElementById('ghostHud').classList.toggle('on',diff==='ghost');}
+function toMenu(){paused=false;AU.engineStop();AU.click();state='menu';enemies=[];signs=[];pickups=[];particles=[];floats=[];tunnelAmt=0;player=newPlayer();player.x=player.targetX=lanes[1];player.y=H-carH()*1.7;refreshMenuStats();document.getElementById('speedoBox').classList.remove('on');document.getElementById('over').classList.add('hidden');document.getElementById('pause').classList.add('hidden');document.getElementById('pauseBtn').classList.remove('on');document.getElementById('ghostHud').classList.remove('on');document.getElementById('menu').classList.remove('hidden');}
 function openShop(){AU.resume();AU.click();renderShop();document.getElementById('menu').classList.add('hidden');document.getElementById('over').classList.add('hidden');document.getElementById('shop').classList.remove('hidden');}
 function closeShop(){AU.click();document.getElementById('shop').classList.add('hidden');refreshMenuStats();document.getElementById('menu').classList.remove('hidden');}
 function renderShop(){
@@ -772,7 +826,33 @@ function renderShop(){
   }
 }
 
-document.getElementById('seg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;AU.resume();AU.click();diff=b.dataset.d;[...document.querySelectorAll('#seg button')].forEach(x=>x.classList.toggle('sel',x===b));});
+function setDiff(d){
+  diff=d;
+  [...document.querySelectorAll('#seg button')].forEach(x=>x.classList.toggle('sel',x.dataset.d===d));
+  [...document.querySelectorAll('#pseg button')].forEach(x=>x.classList.toggle('sel',x.dataset.d===d));
+  const gt=document.getElementById('ghostTag');if(gt)gt.classList.toggle('on',d==='ghost');
+  const gh=document.getElementById('ghostHud');if(gh)gh.classList.toggle('on',d==='ghost'&&state==='play');
+}
+function syncPauseMute(){const b=document.getElementById('pmuteBtn');if(b)b.textContent=AU.isMuted()?'Ton ein':'Ton aus';}
+function pauseGame(){
+  if(state!=='play')return;
+  paused=true;AU.engineStop();
+  setDiff(diff);syncPauseMute();
+  document.getElementById('pause').classList.remove('hidden');
+  document.getElementById('pauseBtn').classList.remove('on');
+}
+function resumeGame(){
+  paused=false;
+  if(state==='play')AU.engineStart();
+  document.getElementById('pause').classList.add('hidden');
+  document.getElementById('pauseBtn').classList.add('on');
+}
+document.getElementById('seg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;AU.resume();AU.click();setDiff(b.dataset.d);});
+document.getElementById('pseg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;AU.click();setDiff(b.dataset.d);});
+document.getElementById('pauseBtn').addEventListener('click',pauseGame);
+document.getElementById('resumeBtn').addEventListener('click',resumeGame);
+document.getElementById('ptoMenu').addEventListener('click',()=>{resumeGame();toMenu();});
+document.getElementById('pmuteBtn').addEventListener('click',()=>{AU.resume();AU.setMuted(!AU.isMuted());renderMute();syncPauseMute();});
 document.getElementById('play').onclick=startGame;
 document.getElementById('retry').onclick=startGame;
 document.getElementById('toMenu').onclick=toMenu;
