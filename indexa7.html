@@ -106,7 +106,7 @@
     <div class="veil"></div>
     <div class="top">
       <div class="logo"><span class="badge">A7</span><span class="word">RUN</span></div>
-      <div class="tag">Hamburg · Schnelsen → Elbtunnel</div>
+      <div class="tag">Hamburg → Grenztunnel Füssen</div>
       <div class="stats">
         <div><span class="l">Rekord</span><span class="v" id="rec">—</span></div>
         <div><span class="l">Coins</span><span class="v gold" id="coins">0</span></div>
@@ -412,11 +412,47 @@ function refreshMenuStats(){const rc=document.getElementById('rec');if(rc)rc.tex
 
 /* ============ config / state ============ */
 const ROUTE=[
+  // Hamburg
   {name:'Schnelsen',type:'open',len:1300},{name:'Tunnel Schnelsen',type:'tunnel',len:850},
   {name:'Eidelstedt',type:'open',len:1200},{name:'Tunnel Stellingen',type:'tunnel',len:850},
   {name:'Volkspark',type:'open',len:1200},{name:'Tunnel Altona',type:'tunnel',len:850},
   {name:'Othmarschen',type:'open',len:1100},{name:'Elbtunnel',type:'tunnel',len:1600},
-  {name:'Heimfeld',type:'open',len:1400}];
+  {name:'Heimfeld',type:'open',len:1400},
+  // Niedersachsen
+  {name:'Harburg',type:'open',len:1300},
+  {name:'Lüneburger Heide',type:'open',len:2400},
+  {name:'Soltau',type:'open',len:1800},
+  {name:'Walsrode',type:'open',len:1600},
+  // Hannover
+  {name:'Hannover',type:'open',len:2000},
+  // Südniedersachsen
+  {name:'Northeim',type:'open',len:1800},
+  {name:'Göttingen',type:'open',len:1800},
+  // Hessen
+  {name:'Hann. Münden',type:'open',len:1200},
+  {name:'Bad Hersfeld',type:'open',len:1800},
+  {name:'Knüllwald',type:'open',len:1400},
+  {name:'Tunnel Knüll',type:'tunnel',len:700},
+  {name:'Fulda',type:'open',len:1800},
+  // Unterfranken
+  {name:'Hammelburg',type:'open',len:1800},
+  {name:'Schweinfurt',type:'open',len:1800},
+  {name:'Würzburg',type:'open',len:2000},
+  {name:'Tunnel Gramschatzer Wald',type:'tunnel',len:900},
+  // Mittelfranken
+  {name:'Ansbach',type:'open',len:1800},
+  {name:'Feuchtwangen',type:'open',len:1600},
+  {name:'Dinkelsbühl',type:'open',len:1600},
+  // Schwaben
+  {name:'Nördlingen',type:'open',len:1600},
+  {name:'Memmingen',type:'open',len:1800},
+  {name:'Kempten',type:'open',len:1500},
+  {name:'Tunnel Illertal',type:'tunnel',len:750},
+  // Allgäu
+  {name:'Allgäu',type:'open',len:1600},
+  {name:'Füssen',type:'open',len:1400},
+  {name:'Grenztunnel',type:'tunnel',len:1800},
+];
 const DIFF={chill:{base:5,ramp:0.0006,gap:92},normal:{base:6,ramp:0.0009,gap:80},brutal:{base:7.5,ramp:0.0014,gap:62}};
 let diff='normal';
 let state='menu',score=0,best=0,speed=6,scroll=0,spawnTimer=0;
@@ -702,7 +738,16 @@ function crash(){state='over';best=Math.max(best,score);AU.engineStop();AU.crash
   const earned=Math.floor(score/2);coins+=earned;Store.save();
   document.getElementById('finalScore').textContent=kmTxt(score);document.getElementById('finalBest').textContent=kmTxt(best);
   document.getElementById('earned').textContent='+'+earned.toLocaleString('de-DE')+' Coins';
-  const km=score/200;let v='Auf dem Standstreifen gelandet.';if(km>6)v='Bis Eidelstedt geschafft. Solide.';if(km>14)v='Elbtunnel in Sicht. Stark gefahren.';if(km>22)v='Durch ganz HH. Golf R approved.';
+  const km=score/200;let v='Auf dem Standstreifen gelandet.';
+  if(km>6)v='Bis Eidelstedt. Solide.';
+  if(km>14)v='Elbtunnel in Sicht. Stark gefahren.';
+  if(km>22)v='Durch ganz HH. Golf R approved.';
+  if(km>52)v='Hamburg hinter dir. Weiter südwärts!';
+  if(km>97)v='Hannover im Rückspiegel. Respekt.';
+  if(km>150)v='Hessen durchquert. Fulda war gestern.';
+  if(km>178)v='Würzburg geschafft – Bayern ruft!';
+  if(km>232)v='Allgäu! Fast am Grenztunnel.';
+  if(km>250)v='Grenztunnel erreicht – absolut legendär!';
   document.getElementById('verdict').textContent=v;
   document.getElementById('hud').classList.remove('on');document.getElementById('place').classList.remove('on');document.getElementById('speedoBox').classList.remove('on');document.getElementById('over').classList.remove('hidden');}
 function startGame(){AU.resume();AU.click();resetRun();state='play';AU.engineStart();document.getElementById('menu').classList.add('hidden');document.getElementById('over').classList.add('hidden');document.getElementById('hud').classList.add('on');document.getElementById('place').classList.add('on');document.getElementById('speedoBox').classList.add('on');}
