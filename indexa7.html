@@ -530,7 +530,7 @@ function spawn(ambient){
   if(ambient&&lane===player.lane)lane=(lane+1)%LANES;
   const kind=truck?'truck':KINDS[Math.random()*KINDS.length|0];
   const col=COLS[Math.random()*COLS.length|0], cab=Math.random()<0.5?'#b23b3b':'#2c3e50';
-  const rw=()=>({wobPhase:Math.random()*6.283,wobAmp:1.5+Math.random()*2,wobFreq:0.018+Math.random()*0.015,speedMul:1.0+Math.random()*0.12});
+  const rw=()=>({wobPhase:Math.random()*6.283,wobAmp:4+Math.random()*7,wobFreq:0.016+Math.random()*0.018,bobAmp:0.8+Math.random()*1.8,bobFreq:0.038+Math.random()*0.032,speedMul:1.0+Math.random()*0.32});
   enemies.push({lane,x:lanes[lane],baseX:lanes[lane],y:-carH()*(truck?2.5:1.2),truck,kind,col,cab,key:truck?`t|${col}|${cab}`:`${kind}|${col}`,...rw()});
   if(!ambient&&!truck&&Math.random()<0.4){let l2=(lane+2)%LANES;const k=KINDS[Math.random()*KINDS.length|0],c2=COLS[COLS.length*Math.random()|0];
     enemies.push({lane:l2,x:lanes[l2],baseX:lanes[l2],y:-carH()*(1.4+Math.random()*0.6),truck:false,kind:k,col:c2,key:`${k}|${c2}`,...rw()});}
@@ -582,8 +582,9 @@ function blitVehicle(e){
   // Schlagschatten (Licht von oben-links)
   ctx.save();ctx.globalAlpha=0.30;ctx.fillStyle='#000';rr(ctx,x-w/2+4,y-h/2+5,w,h,w*0.24);ctx.fill();ctx.restore();
   const s=sprite(e.key,e.kind,e.col,e.cab);
-  const rot=Math.cos(fc*(e.wobFreq||0.02)+(e.wobPhase||0))*(e.wobFreq||0.02)*(e.wobAmp||0)*0.06;
-  ctx.save();ctx.translate(x,y);ctx.rotate(rot);ctx.drawImage(s,-w/2,-h/2,w,h);ctx.restore();
+  const rot=Math.cos(fc*(e.wobFreq||0.02)+(e.wobPhase||0))*(e.wobFreq||0.02)*(e.wobAmp||0)*0.18;
+  const bob=Math.sin(fc*(e.bobFreq||0.04)+(e.wobPhase||0)*0.7)*(e.bobAmp||0);
+  ctx.save();ctx.translate(x,y+bob);ctx.rotate(rot);ctx.drawImage(s,-w/2,-h/2,w,h);ctx.restore();
   // Rücklicht-Glow im Tunnel
   if(tunnelAmt>0.2){ctx.save();ctx.globalCompositeOperation='lighter';ctx.fillStyle=`rgba(255,40,30,${0.5*tunnelAmt})`;
     ctx.beginPath();ctx.ellipse(x,y+h*0.42,w*0.5,h*0.12,0,0,7);ctx.fill();ctx.restore();}
