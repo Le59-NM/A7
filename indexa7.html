@@ -90,9 +90,9 @@
   .btn:active{transform:scale(.96);}
   .btn.primary{color:#1a1200;background:linear-gradient(95deg,#ffd23f,#ffe680);box-shadow:0 6px 20px rgba(255,210,63,.4);}
   .btn.ghost{color:#fff;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.4);backdrop-filter:blur(4px);}
-  #pauseBtn{position:absolute;top:calc(10px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:60;width:36px;height:36px;border-radius:50%;border:1.5px solid rgba(255,255,255,.28);background:rgba(10,14,8,.52);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;cursor:pointer;pointer-events:auto;}
+  #pauseBtn{position:absolute;top:calc(10px + env(safe-area-inset-top));right:calc(14px + env(safe-area-inset-right));z-index:60;width:36px;height:36px;border-radius:50%;border:1.5px solid rgba(255,255,255,.28);background:rgba(10,14,8,.52);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;cursor:pointer;pointer-events:auto;}
   #pauseBtn.on{display:flex;}
-  #pauseBtn:active{transform:translateX(-50%) scale(.93);}
+  #pauseBtn:active{transform:scale(.93);}
   #pause{justify-content:center;gap:18px;padding:26px;}
   .pmenu{position:relative;display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center;pointer-events:auto;width:100%;max-width:360px;}
   .ptitle{font-size:32px;font-weight:900;color:#fff;letter-spacing:.06em;text-shadow:0 3px 14px rgba(0,0,0,.7);}
@@ -530,9 +530,10 @@ function spawn(ambient){
   if(ambient&&lane===player.lane)lane=(lane+1)%LANES;
   const kind=truck?'truck':KINDS[Math.random()*KINDS.length|0];
   const col=COLS[Math.random()*COLS.length|0], cab=Math.random()<0.5?'#b23b3b':'#2c3e50';
-  enemies.push({lane,x:lanes[lane],y:-carH()*(truck?2.5:1.2),truck,kind,col,cab,key:truck?`t|${col}|${cab}`:`${kind}|${col}`});
+  const rw=()=>({wobPhase:Math.random()*6.283,wobAmp:1.5+Math.random()*2,wobFreq:0.018+Math.random()*0.015,speedMul:0.88+Math.random()*0.24});
+  enemies.push({lane,x:lanes[lane],baseX:lanes[lane],y:-carH()*(truck?2.5:1.2),truck,kind,col,cab,key:truck?`t|${col}|${cab}`:`${kind}|${col}`,...rw()});
   if(!ambient&&!truck&&Math.random()<0.4){let l2=(lane+2)%LANES;const k=KINDS[Math.random()*KINDS.length|0],c2=COLS[COLS.length*Math.random()|0];
-    enemies.push({lane:l2,x:lanes[l2],y:-carH()*(1.4+Math.random()*0.6),truck:false,kind:k,col:c2,key:`${k}|${c2}`});}
+    enemies.push({lane:l2,x:lanes[l2],baseX:lanes[l2],y:-carH()*(1.4+Math.random()*0.6),truck:false,kind:k,col:c2,key:`${k}|${c2}`,...rw()});}
 }
 
 /* ============ Power-ups ============ */
@@ -581,7 +582,8 @@ function blitVehicle(e){
   // Schlagschatten (Licht von oben-links)
   ctx.save();ctx.globalAlpha=0.30;ctx.fillStyle='#000';rr(ctx,x-w/2+4,y-h/2+5,w,h,w*0.24);ctx.fill();ctx.restore();
   const s=sprite(e.key,e.kind,e.col,e.cab);
-  ctx.drawImage(s,x-w/2,y-h/2,w,h);
+  const rot=Math.cos(fc*(e.wobFreq||0.02)+(e.wobPhase||0))*(e.wobFreq||0.02)*(e.wobAmp||0)*0.06;
+  ctx.save();ctx.translate(x,y);ctx.rotate(rot);ctx.drawImage(s,-w/2,-h/2,w,h);ctx.restore();
   // Rücklicht-Glow im Tunnel
   if(tunnelAmt>0.2){ctx.save();ctx.globalCompositeOperation='lighter';ctx.fillStyle=`rgba(255,40,30,${0.5*tunnelAmt})`;
     ctx.beginPath();ctx.ellipse(x,y+h*0.42,w*0.5,h*0.12,0,0,7);ctx.fill();ctx.restore();}
@@ -757,7 +759,7 @@ function frame(){
     if(score>=freeUntil && ++spawnTimer>=gap){spawnTimer=0;spawn(false);}
     if(--pickupTimer<=0){pickupTimer=180+(Math.random()*160|0);spawnPickup();}
     const h=carH(), invuln=player.air>0||score<freeUntil;
-    for(const e of enemies){e.y+=eff;const eh=h*(e.truck?2.35:1);
+    for(const e of enemies){e.y+=eff*(e.speedMul||1);if(e.baseX!==undefined)e.x=e.baseX+Math.sin(fc*(e.wobFreq||0.02)+(e.wobPhase||0))*(e.wobAmp||0);const eh=h*(e.truck?2.35:1);
       if(diff!=='ghost'&&!invuln&&Math.abs(e.x-player.x)<carW()*0.6&&Math.abs(e.y-player.y)<(eh+h)/2*0.82){crash();return;}}
     enemies=enemies.filter(e=>e.y<H+h*3);
     for(const p of pickups){p.y+=eff;
@@ -774,7 +776,7 @@ function frame(){
     document.getElementById('speedo').textContent=Math.round(eff*18);
   }else{
     tunnelAmt+=(-tunnelAmt)*0.04;if(++spawnTimer>=70){spawnTimer=0;spawn(true);}
-    for(const e of enemies)e.y+=speed;enemies=enemies.filter(e=>e.y<H+carH()*3);
+    for(const e of enemies){e.y+=speed*(e.speedMul||1);if(e.baseX!==undefined)e.x=e.baseX+Math.sin(fc*(e.wobFreq||0.02)+(e.wobPhase||0))*(e.wobAmp||0);}enemies=enemies.filter(e=>e.y<H+carH()*3);
   }
   ctx.clearRect(0,0,W,H);
   drawWorld();
