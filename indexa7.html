@@ -634,14 +634,35 @@ window.addEventListener('keyup',e=>{
 /* ============ spawn ============ */
 function spawn(ambient){
   const truck=Math.random()<0.26;
-  let lane=truck?(LANES-1-(Math.random()<0.4?1:0)):Math.floor(Math.random()*LANES);
+  // Spurwahl – Deutsches Rechtsfahrgebot (nicht garantiert, ~10% Abweichung)
+  let lane;
+  if(truck){
+    lane=Math.random()<0.82?LANES-1:LANES-2;   // LKW: 82 % ganz rechts, 18 % zweite von rechts
+  }else{
+    const r=Math.random();
+    if(r<0.38)     lane=LANES-1;   // 38 % ganz rechts (langsam)
+    else if(r<0.68)lane=LANES-2;   // 30 % zweite von rechts
+    else if(r<0.88)lane=1;         // 20 % zweite von links
+    else            lane=0;        // 12 % Überholspur (links, schnell)
+  }
   if(ambient&&lane===player.lane)lane=(lane+1)%LANES;
   const kind=truck?'truck':KINDS[Math.random()*KINDS.length|0];
   const col=COLS[Math.random()*COLS.length|0], cab=Math.random()<0.5?'#b23b3b':'#2c3e50';
-  const rw=()=>({wobPhase:Math.random()*6.283,wobAmp:2+Math.random()*3,wobFreq:0.016+Math.random()*0.018,bobAmp:0.4+Math.random()*0.8,bobFreq:0.038+Math.random()*0.032,speedMul:0.45+Math.random()*0.55});
-  enemies.push({lane,x:lanes[lane],baseX:lanes[lane],y:-carH()*(truck?2.5:1.2),truck,kind,col,cab,key:truck?`t|${col}|${cab}`:`${kind}|${col}`,...rw()});
+  // Spurabhängige Geschwindigkeit (linke Spur = schneller, rechte = langsamer)
+  // speedMul < 1 = langsamer als Spieler → Spieler überholt
+  const laneSpd=[[0.74,0.22],[0.57,0.28],[0.44,0.24],[0.30,0.24]];
+  const rw=(l)=>{
+    const ls=laneSpd[Math.min(l,LANES-1)];
+    const speedMul=truck
+      ?0.30+Math.random()*0.20                    // LKW immer langsam (0.30–0.50)
+      :Math.random()<0.10                          // 10 % Realvarianz (falsche Spur)
+        ?0.42+Math.random()*0.54
+        :ls[0]+Math.random()*ls[1];               // spurgerecht
+    return {wobPhase:Math.random()*6.283,wobAmp:2+Math.random()*3,wobFreq:0.016+Math.random()*0.018,bobAmp:0.4+Math.random()*0.8,bobFreq:0.038+Math.random()*0.032,speedMul};
+  };
+  enemies.push({lane,x:lanes[lane],baseX:lanes[lane],y:-carH()*(truck?2.5:1.2),truck,kind,col,cab,key:truck?`t|${col}|${cab}`:`${kind}|${col}`,...rw(lane)});
   if(!ambient&&!truck&&Math.random()<0.4){let l2=(lane+2)%LANES;const k=KINDS[Math.random()*KINDS.length|0],c2=COLS[COLS.length*Math.random()|0];
-    enemies.push({lane:l2,x:lanes[l2],baseX:lanes[l2],y:-carH()*(1.4+Math.random()*0.6),truck:false,kind:k,col:c2,key:`${k}|${c2}`,...rw()});}
+    enemies.push({lane:l2,x:lanes[l2],baseX:lanes[l2],y:-carH()*(1.4+Math.random()*0.6),truck:false,kind:k,col:c2,key:`${k}|${c2}`,...rw(l2)});}
 }
 
 /* ============ Power-ups ============ */
