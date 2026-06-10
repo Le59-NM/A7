@@ -453,46 +453,140 @@ function refreshMenuStats(){const rc=document.getElementById('rec');if(rc)rc.tex
 
 /* ============ config / state ============ */
 const ROUTE=[
-  // Hamburg
-  {name:'Schnelsen',type:'open',len:1300},{name:'Tunnel Schnelsen',type:'tunnel',len:850},
-  {name:'Eidelstedt',type:'open',len:1200},{name:'Tunnel Stellingen',type:'tunnel',len:850},
-  {name:'Volkspark',type:'open',len:1200},{name:'Tunnel Altona',type:'tunnel',len:850},
-  {name:'Othmarschen',type:'open',len:1100},{name:'Elbtunnel',type:'tunnel',len:1600},
-  {name:'Heimfeld',type:'open',len:1400},
-  // Niedersachsen
-  {name:'Harburg',type:'open',len:1300},
-  {name:'Lüneburger Heide',type:'open',len:2400},
-  {name:'Soltau',type:'open',len:1800},
-  {name:'Walsrode',type:'open',len:1600},
-  // Hannover
-  {name:'Hannover',type:'open',len:2000},
-  // Südniedersachsen
-  {name:'Northeim',type:'open',len:1800},
-  {name:'Göttingen',type:'open',len:1800},
-  // Hessen
-  {name:'Hann. Münden',type:'open',len:1200},
-  {name:'Bad Hersfeld',type:'open',len:1800},
-  {name:'Knüllwald',type:'open',len:1400},
-  {name:'Tunnel Knüll',type:'tunnel',len:700},
-  {name:'Fulda',type:'open',len:1800},
-  // Unterfranken
+  // Hamburg – Tunnelbereich (km 0–18)
+  {name:'Hamburg-Schnelsen',type:'open',len:200},
+  {name:'Tunnel Schnelsen',type:'tunnel',len:200},
+  {name:'Dreieck Hamburg-Nordwest',type:'open',len:200},
+  {name:'Tunnel Stellingen',type:'tunnel',len:200},
+  {name:'Hamburg-Stellingen',type:'open',len:100},
+  {name:'Tunnel Altona',type:'tunnel',len:300},
+  {name:'Hamburg-Volkspark',type:'open',len:300},
+  {name:'Hamburg-Bahrenfeld',type:'open',len:400},
+  {name:'Hamburg-Othmarschen',type:'open',len:200},
+  {name:'Elbtunnel',type:'tunnel',len:600},
+  {name:'Hamburg-Hausbruch',type:'open',len:400},
+  {name:'Hamburg-Heimfeld',type:'open',len:400},
+  // Hamburger Süden / Harburg (km 18–46)
+  {name:'Dreieck Hamburg-Südwest',type:'open',len:400},
+  {name:'Hamburg-Marmstorf',type:'open',len:600},
+  {name:'Fleestedt',type:'open',len:400},
+  {name:'Maschener Kreuz',type:'open',len:600},
+  {name:'Horster Dreieck',type:'open',len:1000},
+  {name:'Seevetal-Ramelsloh',type:'open',len:1000},
+  {name:'Thieshope',type:'open',len:1200},
+  {name:'Garlstorf',type:'open',len:1000},
+  // Lüneburger Heide (km 46–114)
+  {name:'Egestorf',type:'open',len:1200},
+  {name:'Evendorf',type:'open',len:1200},
+  {name:'Bispingen',type:'open',len:1200},
+  {name:'Schneverdingen',type:'open',len:1200},
+  {name:'Soltau-Ost',type:'open',len:1000},
+  {name:'Soltau-Süd',type:'open',len:1800},
+  {name:'Dorfmark',type:'open',len:1200},
+  {name:'Bad Fallingbostel',type:'open',len:1200},
+  {name:'Dreieck Walsrode',type:'open',len:1400},
+  {name:'Westenholz',type:'open',len:1200},
+  {name:'Schwarmstedt',type:'open',len:1800},
+  // Hannover (km 114–167)
+  {name:'Berkhof',type:'open',len:1000},
+  {name:'Mellendorf',type:'open',len:1000},
+  {name:'Dreieck Hannover-Nord',type:'open',len:800},
+  {name:'Großburgwedel',type:'open',len:1200},
+  {name:'Altwarmbüchen',type:'open',len:1000},
+  {name:'Kreuz Hannover-Kirchhorst',type:'open',len:1200},
+  {name:'Kreuz Hannover-Ost',type:'open',len:400},
+  {name:'Hannover-Anderten',type:'open',len:1400},
+  {name:'Laatzen',type:'open',len:800},
+  {name:'Dreieck Hannover-Süd',type:'open',len:1400},
+  // Südniedersachsen / Harz (km 167–263)
+  {name:'Hildesheim-Drispenstedt',type:'open',len:1000},
+  {name:'Hildesheim',type:'open',len:1800},
+  {name:'Derneburg/Salzgitter',type:'open',len:1000},
+  {name:'Dreieck Salzgitter',type:'open',len:1400},
+  {name:'Bockenem',type:'open',len:1400},
+  {name:'Rhüden (Harz)',type:'open',len:1400},
+  {name:'Seesen (Harz)',type:'open',len:2200},
+  {name:'Echte',type:'open',len:2000},
+  {name:'Northeim-Nord',type:'open',len:1000},
+  {name:'Northeim-West',type:'open',len:1800},
+  {name:'Nörten-Hardenberg',type:'open',len:1800},
+  {name:'Göttingen-Nord',type:'open',len:1000},
+  {name:'Göttingen',type:'open',len:1200},
+  {name:'Dreieck Drammetal',type:'open',len:2000},
+  // Nordhessen (km 263–367)
+  {name:'Hann. Münden-Hedemünden',type:'open',len:1400},
+  {name:'Staufenberg-Lutterberg',type:'open',len:1800},
+  {name:'Kassel-Nord',type:'open',len:1000},
+  {name:'Kassel-Ost',type:'open',len:800},
+  {name:'Kreuz Kassel-Mitte',type:'open',len:800},
+  {name:'Dreieck Kassel-Süd',type:'open',len:2000},
+  {name:'Guxhagen',type:'open',len:1400},
+  {name:'Melsungen',type:'open',len:1000},
+  {name:'Malsfeld',type:'open',len:1800},
+  {name:'Homberg (Efze)',type:'open',len:3000},
+  {name:'Bad Hersfeld-West',type:'open',len:1200},
+  {name:'Kirchheimer Dreieck',type:'open',len:400},
+  {name:'Kirchheim',type:'open',len:1000},
+  {name:'Hattenbacher Dreieck',type:'open',len:800},
+  // Fulda / Rhön (km 367–409)
+  {name:'Niederaula',type:'open',len:3200},
+  {name:'Hünfeld/Schlitz',type:'open',len:2400},
+  {name:'Fulda-Nord',type:'open',len:1200},
+  {name:'Fulda-Mitte',type:'open',len:800},
+  {name:'Dreieck Fulda',type:'open',len:3600},
+  // Unterfranken / Rhön (km 409–490)
+  {name:'Bad Brückenau-Volkers',type:'open',len:1400},
+  {name:'Bad Brückenau/Wildflecken',type:'open',len:2200},
+  {name:'Bad Kissingen/Oberthulba',type:'open',len:1400},
   {name:'Hammelburg',type:'open',len:1800},
-  {name:'Schweinfurt',type:'open',len:1800},
-  {name:'Würzburg',type:'open',len:2000},
-  {name:'Tunnel Gramschatzer Wald',type:'tunnel',len:900},
-  // Mittelfranken
-  {name:'Ansbach',type:'open',len:1800},
-  {name:'Feuchtwangen',type:'open',len:1600},
-  {name:'Dinkelsbühl',type:'open',len:1600},
-  // Schwaben
-  {name:'Nördlingen',type:'open',len:1600},
-  {name:'Memmingen',type:'open',len:1800},
-  {name:'Kempten',type:'open',len:1500},
-  {name:'Tunnel Illertal',type:'tunnel',len:750},
-  // Allgäu
-  {name:'Allgäu',type:'open',len:1600},
-  {name:'Füssen',type:'open',len:1400},
-  {name:'Grenztunnel',type:'tunnel',len:1800},
+  {name:'Wasserlosen',type:'open',len:2000},
+  {name:'Kreuz Schweinfurt/Werneck',type:'open',len:1800},
+  {name:'Gramschatzer Wald',type:'open',len:2000},
+  {name:'Würzburg/Estenfeld',type:'open',len:2400},
+  // Franken / Main (km 490–574)
+  {name:'Kreuz Biebelried',type:'open',len:1200},
+  {name:'Kitzingen',type:'open',len:1200},
+  {name:'Marktbreit',type:'open',len:2200},
+  {name:'Gollhofen',type:'open',len:1800},
+  {name:'Uffenheim/Langensteinach',type:'open',len:1400},
+  {name:'Bad Windsheim',type:'open',len:2600},
+  {name:'Rothenburg ob der Tauber',type:'open',len:1800},
+  {name:'Wörnitz',type:'open',len:1200},
+  {name:'Kreuz Feuchtwangen/Crailsheim',type:'open',len:1000},
+  {name:'Feuchtwangen-West',type:'open',len:2200},
+  {name:'Dinkelsbühl/Fichtenau',type:'open',len:2200},
+  // Östliches Württemberg (km 585–667)
+  {name:'Ellwangen',type:'open',len:2200},
+  {name:'Aalen/Westhausen',type:'open',len:2000},
+  {name:'Aalen/Oberkochen',type:'open',len:2400},
+  {name:'Heidenheim',type:'open',len:2000},
+  {name:'Giengen',type:'open',len:1800},
+  {name:'Niederstotzingen',type:'open',len:2000},
+  {name:'Langenau',type:'open',len:1800},
+  {name:'Kreuz Ulm/Elchingen',type:'open',len:1000},
+  // Donau / Iller (km 667–716)
+  {name:'Nersingen',type:'open',len:1200},
+  {name:'Dreieck Hittistetten',type:'open',len:1000},
+  {name:'Vöhringen',type:'open',len:1200},
+  {name:'Illertissen',type:'open',len:1200},
+  {name:'Altenstadt a.d. Iller',type:'open',len:1200},
+  {name:'Dettingen a.d. Iller',type:'open',len:1200},
+  {name:'Berkheim',type:'open',len:1800},
+  {name:'Kreuz Memmingen',type:'open',len:1000},
+  // Memmingen / Allgäu (km 716–764)
+  {name:'Memmingen-Süd',type:'open',len:1000},
+  {name:'Woringen',type:'open',len:1200},
+  {name:'Bad Grönenbach',type:'open',len:1400},
+  {name:'Dietmannsried',type:'open',len:1800},
+  {name:'Kempten-Leubas',type:'open',len:1200},
+  {name:'Kempten',type:'open',len:1200},
+  {name:'Betzigau',type:'open',len:800},
+  {name:'Dreieck Allgäu',type:'open',len:2200},
+  // Allgäu / Füssen (km 764–803)
+  {name:'Oy-Mittelberg',type:'open',len:1800},
+  {name:'Nesselwang',type:'open',len:3000},
+  {name:'Füssen',type:'open',len:800},
+  {name:'Grenztunnel Füssen',type:'tunnel',len:1000},
 ];
 const DIFF={chill:{base:5,ramp:0.0006,gap:92},normal:{base:6,ramp:0.0009,gap:80},brutal:{base:7.5,ramp:0.0014,gap:62},ghost:{base:6,ramp:0.0009,gap:80}};
 let diff='normal';
@@ -763,6 +857,7 @@ function frame(){
     for(const e of enemies){e.y+=eff*(e.speedMul||1);if(e.baseX!==undefined)e.x=e.baseX+Math.sin(fc*(e.wobFreq||0.02)+(e.wobPhase||0))*(e.wobAmp||0);const eh=h*(e.truck?2.35:1);
       if(diff!=='ghost'&&!invuln&&Math.abs(e.x-player.x)<carW()*0.6&&Math.abs(e.y-player.y)<(eh+h)/2*0.82){crash();return;}}
     enemies=enemies.filter(e=>e.y<H+h*3);
+    for(let i=0;i<enemies.length;i++){for(let j=i+1;j<enemies.length;j++){if(enemies[i].lane!==enemies[j].lane)continue;const hi=h*(enemies[i].truck?2.35:1),hj=h*(enemies[j].truck?2.35:1);const minD=(hi+hj)*0.5+12;const dy=enemies[j].y-enemies[i].y;if(Math.abs(dy)<minD){if(dy>=0)enemies[j].y=enemies[i].y+minD;else enemies[i].y=enemies[j].y+minD;}}}
     for(const p of pickups){p.y+=eff;
       if(!p.done&&player.air<=0&&Math.abs(p.x-player.x)<carW()*0.62&&Math.abs(p.y-player.y)<h*0.7){p.done=true;trigger(p.type);}}
     pickups=pickups.filter(p=>p.y<H+h*2&&!p.done);
@@ -778,6 +873,7 @@ function frame(){
   }else{
     tunnelAmt+=(-tunnelAmt)*0.04;if(++spawnTimer>=70){spawnTimer=0;spawn(true);}
     for(const e of enemies){e.y+=speed*(e.speedMul||1);if(e.baseX!==undefined)e.x=e.baseX+Math.sin(fc*(e.wobFreq||0.02)+(e.wobPhase||0))*(e.wobAmp||0);}enemies=enemies.filter(e=>e.y<H+carH()*3);
+    const ch=carH();for(let i=0;i<enemies.length;i++){for(let j=i+1;j<enemies.length;j++){if(enemies[i].lane!==enemies[j].lane)continue;const hi=ch*(enemies[i].truck?2.35:1),hj=ch*(enemies[j].truck?2.35:1);const minD=(hi+hj)*0.5+12;const dy=enemies[j].y-enemies[i].y;if(Math.abs(dy)<minD){if(dy>=0)enemies[j].y=enemies[i].y+minD;else enemies[i].y=enemies[j].y+minD;}}}
   }
   ctx.clearRect(0,0,W,H);
   drawWorld();
@@ -796,15 +892,18 @@ function crash(){paused=false;state='over';best=Math.max(best,score);AU.engineSt
   document.getElementById('finalScore').textContent=kmTxt(score);document.getElementById('finalBest').textContent=kmTxt(best);
   document.getElementById('earned').textContent='+'+earned.toLocaleString('de-DE')+' Coins';
   const km=score/200;let v='Auf dem Standstreifen gelandet.';
-  if(km>6)v='Bis Eidelstedt. Solide.';
-  if(km>14)v='Elbtunnel in Sicht. Stark gefahren.';
-  if(km>22)v='Durch ganz HH. Golf R approved.';
-  if(km>52)v='Hamburg hinter dir. Weiter südwärts!';
-  if(km>97)v='Hannover im Rückspiegel. Respekt.';
-  if(km>150)v='Hessen durchquert. Fulda war gestern.';
-  if(km>178)v='Würzburg geschafft – Bayern ruft!';
-  if(km>232)v='Allgäu! Fast am Grenztunnel.';
-  if(km>250)v='Grenztunnel erreicht – absolut legendär!';
+  if(km>9)v='Othmarschen. Elbtunnel voraus!';
+  if(km>13)v='Elbtunnel geschafft. Klasse Fahrt!';
+  if(km>18)v='Hamburg-Heimfeld! Die Stadt liegt hinter dir.';
+  if(km>75)v='Soltau! Lüneburger Heide im Rückspiegel.';
+  if(km>133)v='Hannover – die Hälfte liegt vor dir!';
+  if(km>263)v='Göttingen passiert. Hessen liegt vor dir.';
+  if(km>399)v='Fulda! Der Süden ruft.';
+  if(km>490)v='Würzburg – Bayern hat dich!';
+  if(km>667)v='Kreuz Ulm! Schwaben grüßt dich.';
+  if(km>754)v='Kempten! Das Allgäu öffnet sich.';
+  if(km>799)v='Füssen – fast da! Vollgas zum Grenztunnel!';
+  if(km>803)v='Grenztunnel Füssen erreicht – absolut legendär!';
   document.getElementById('verdict').textContent=v;
   document.getElementById('hud').classList.remove('on');document.getElementById('place').classList.remove('on');document.getElementById('speedoBox').classList.remove('on');document.getElementById('over').classList.remove('hidden');}
 function startGame(){AU.resume();AU.click();resetRun();state='play';paused=false;AU.engineStart();document.getElementById('menu').classList.add('hidden');document.getElementById('over').classList.add('hidden');document.getElementById('pause').classList.add('hidden');document.getElementById('hud').classList.add('on');document.getElementById('place').classList.add('on');document.getElementById('speedoBox').classList.add('on');document.getElementById('pauseBtn').classList.add('on');document.getElementById('ghostHud').classList.toggle('on',diff==='ghost');}
