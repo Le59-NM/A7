@@ -138,7 +138,8 @@
         <button data-d="ghost">Ghost</button>
       </div>
       <button class="play" id="play">Losfahren</button>
-      <button class="play ghost2" id="shopBtn">Shop · Autos</button>
+      <!-- Shop-Button vorerst ausgeblendet -->
+      <!-- <button class="play ghost2" id="shopBtn">Shop · Autos</button> -->
       <div class="hint">Tippen links / rechts · Desktop ← →</div>
     </div>
   </div>
@@ -414,17 +415,10 @@ function sprite(key,kind,color,cab){ return spriteCache[key] || (spriteCache[key
 
 /* ============ Autos / Shop ============ */
 const CARS=[
-  {id:'golfr',  name:'Golf R',        price:0,    kind:'sport', color:'#16386e'},
-  {id:'gti',    name:'GTI',           price:600,  kind:'hatch', color:'#c0392b', stripe:'#15171c'},
-  {id:'taxi',   name:'Hamburg Taxi',  price:900,  kind:'sedan', color:'#e7d9a8'},
-  {id:'polizei',name:'Polizei',       price:1300, kind:'suv',   color:'#1f6f43', roof:'#ededed'},
-  {id:'bulli',  name:'VW Bulli',      price:1800, kind:'van',   color:'#2aa1c8', roof:'#f2f2f2'},
-  {id:'gklasse',name:'G-Klasse',      price:2600, kind:'suv',   color:'#15161a'},
-  {id:'super',  name:'Supersportler', price:4200, kind:'sport', color:'#f4c20d', stripe:'#15171c'},
-  {id:'drift',  name:'Drift Neon',    price:6500, kind:'sport', color:'#111418', stripe:'#19f0d8'},
+  {id:'fiesta', name:'Ford Fiesta 1.1 Trend', price:0, kind:'hatch', color:'#edeef0'},
 ];
 const carDef=id=>CARS.find(c=>c.id===id)||CARS[0];
-let coins=0, owned={golfr:true}, sel='golfr';
+let coins=0, owned={fiesta:true}, sel='fiesta';
 function buildSkinSprite(def,w,h){const c=document.createElement('canvas');c.width=w;c.height=h;
   drawCarBody(c.getContext('2d'),w,h,w*0.06,def.kind,def.color,def.roof,def.stripe);return c;}
 
@@ -443,7 +437,7 @@ const Store={
     if(c!=null)coins=+c||0;
     if(o!=null){try{owned=JSON.parse(o);}catch(e){}}
     if(s!=null)sel=s;
-    if(!owned||!owned.golfr){owned=owned||{};owned.golfr=true;} if(!owned[sel])sel='golfr';
+    if(!owned||!owned.fiesta){owned=owned||{};owned.fiesta=true;} if(!owned[sel])sel='fiesta';
     refreshMenuStats();
   },
   async save(){
@@ -1006,7 +1000,7 @@ const SVG_OFF='<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path
 function renderMute(){muteBtn.innerHTML=AU.isMuted()?SVG_OFF:SVG_ON;}
 muteBtn.onclick=()=>{AU.resume();AU.setMuted(!AU.isMuted());renderMute();};
 renderMute();
-document.getElementById('shopBtn').onclick=openShop;
+// document.getElementById('shopBtn').onclick=openShop;
 document.getElementById('shopBack').onclick=closeShop;
 Store.load();
 requestAnimationFrame(frame);
