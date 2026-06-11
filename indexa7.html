@@ -27,7 +27,7 @@
   .speedo.on{display:flex;}
   .speedo .num{font-size:30px;font-weight:800;color:#fff;line-height:1;font-variant-numeric:tabular-nums;text-shadow:0 0 12px rgba(120,220,255,.4);}
   .speedo .unit{font-size:10px;letter-spacing:.18em;color:#9fb3c7;text-transform:uppercase;margin-top:3px;}
-  #brakeBtn{position:absolute;bottom:calc(24px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:55;display:none;flex-direction:column;align-items:center;justify-content:center;width:190px;height:78px;border-radius:18px;border:2px solid rgba(255,70,50,0.45);background:linear-gradient(to bottom,rgba(190,12,2,0.88) calc(var(--bd,0) * 100%),rgba(22,6,4,0.72) calc(var(--bd,0) * 100%));backdrop-filter:blur(5px);color:rgba(255,100,80,0.9);font-size:16px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;pointer-events:auto;touch-action:none;user-select:none;-webkit-user-select:none;transition:border-color .1s,color .1s;}
+  #brakeBtn{position:absolute;bottom:calc(24px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:55;display:none;flex-direction:column;align-items:center;justify-content:center;width:190px;height:78px;border-radius:18px;border:2px solid rgba(255,70,50,0.45);background:linear-gradient(to top,rgba(190,12,2,0.88) calc(var(--bd,0) * 100%),rgba(22,6,4,0.72) calc(var(--bd,0) * 100%));backdrop-filter:blur(5px);color:rgba(255,100,80,0.9);font-size:16px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;pointer-events:auto;touch-action:none;user-select:none;-webkit-user-select:none;transition:border-color .1s,color .1s;}
   #brakeBtn.on{display:flex;}
   #brakeBtn.active{border-color:rgba(255,110,90,0.95);color:#fff;}
   .screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;pointer-events:none;}
@@ -877,8 +877,8 @@ function frame(){
     if(player.hit>0)player.hit--;
     // Sprung (Rampe): Auto fliegt hoch, Welt rauscht in Echtzeit schneller drunter durch
     const bkTarget=(braking&&player.air<=0)?Math.max(0.04,1-brakeDepth*0.96):1;
-    if(brakeFactor>bkTarget)brakeFactor=Math.max(bkTarget,brakeFactor-Math.max(0.002,brakeDepth*0.006));
-    else brakeFactor=Math.min(1,brakeFactor+0.007);
+    if(brakeFactor>bkTarget)brakeFactor=Math.max(bkTarget,brakeFactor-Math.max(0.001,brakeDepth*0.003));
+    else brakeFactor=Math.min(1,brakeFactor+0.005);
     let eff=speed*brakeFactor;
     if(player.air>0){ eff=speed+player.jumpBoost/0.18; player.air+=1/player.jumpDur;
       if(player.air>=1){player.air=0;dust(player.x,player.y+carH()*0.4);AU.land();} }
