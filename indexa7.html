@@ -648,7 +648,12 @@ const ROUTE=[
   {name:'Füssen',type:'open',len:800},
   {name:'Grenztunnel Füssen',type:'tunnel',len:1000},
 ];
-const DIFF={chill:{base:5,ramp:0.0006,gap:92},normal:{base:6,ramp:0.0009,gap:80},brutal:{base:7.5,ramp:0.0014,gap:62},ghost:{base:6,ramp:0.0009,gap:80}};
+const DIFF={
+  chill: {base:6,ramp:0.0009,gap:150,minNpc:2, maxNpc:5 },
+  normal:{base:6,ramp:0.0009,gap:72, minNpc:5, maxNpc:10},
+  brutal:{base:6,ramp:0.0009,gap:32, minNpc:10,maxNpc:15},
+  ghost: {base:6,ramp:0.0009,gap:72, minNpc:5, maxNpc:10},
+};
 let diff='normal';
 let paused=false;
 let state='menu',score=0,best=0,speed=6,scroll=0,spawnTimer=0;
@@ -947,9 +952,9 @@ function frame(){
     } else { player.wob*=0.8; }
     player.x+=(player.targetX-player.x)*(carCfg.handling||0.22);
     // Verkehr (nicht während freier Fahrt)
-    const gap=Math.max(30,cfg.gap-score*0.012);
+    const gap=cfg.gap;
     if(brakeFactor<0.35) enemies=enemies.filter(e=>e.y>-H);
-    if(score>=freeUntil && (spawnTimer+=brakeFactor)>=gap && enemies.length<10){spawnTimer=0;spawn(false);}
+    if(score>=freeUntil && (spawnTimer+=brakeFactor)>=gap && enemies.length<cfg.maxNpc){spawnTimer=0;spawn(false);}
     if(--pickupTimer<=0){pickupTimer=180+(Math.random()*160|0);spawnPickup();}
     const h=carH(), invuln=player.air>0||score<freeUntil;
     for(const e of enemies){e.y+=eff*(e.speedMul||1);if(e.baseX!==undefined)e.x=e.baseX+Math.sin(fc*(e.wobFreq||0.02)+(e.wobPhase||0))*(e.wobAmp||0);const eh=h*(e.truck?2.35:1);
