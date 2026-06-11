@@ -899,7 +899,7 @@ function frame(){
     if(player.hit>0)player.hit--;
     // Sprung (Rampe): Auto fliegt hoch, Welt rauscht in Echtzeit schneller drunter durch
     const bkTarget=(braking&&player.air<=0)?Math.max(0.04,1-brakeDepth*0.96):1;
-    if(brakeFactor>bkTarget)brakeFactor=Math.max(bkTarget,brakeFactor-Math.max(0.001,brakeDepth*0.003));
+    if(brakeFactor>bkTarget)brakeFactor=Math.max(bkTarget,brakeFactor-Math.max(0.0015,brakeDepth*0.004));
     else brakeFactor=Math.min(1,brakeFactor+0.005);
     let eff=speed*brakeFactor;
     if(player.air>0){ eff=speed+player.jumpBoost/0.18; player.air+=1/player.jumpDur;
