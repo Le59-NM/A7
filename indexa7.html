@@ -27,9 +27,9 @@
   .speedo.on{display:flex;}
   .speedo .num{font-size:30px;font-weight:800;color:#fff;line-height:1;font-variant-numeric:tabular-nums;text-shadow:0 0 12px rgba(120,220,255,.4);}
   .speedo .unit{font-size:10px;letter-spacing:.18em;color:#9fb3c7;text-transform:uppercase;margin-top:3px;}
-  #brakeBtn{position:absolute;bottom:calc(18px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:55;display:none;align-items:center;justify-content:center;padding:11px 32px;border-radius:50px;border:2px solid rgba(255,80,60,.5);background:rgba(18,5,4,.65);backdrop-filter:blur(5px);color:#ff6a55;font-size:13px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;pointer-events:auto;touch-action:none;user-select:none;-webkit-user-select:none;transition:background .08s,border-color .08s,color .08s;}
+  #brakeBtn{position:absolute;bottom:calc(24px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:55;display:none;flex-direction:column;align-items:center;justify-content:center;width:190px;height:78px;border-radius:18px;border:2px solid rgba(255,70,50,0.45);background:linear-gradient(to top,rgba(190,12,2,0.88) calc(var(--bd,0) * 100%),rgba(22,6,4,0.72) calc(var(--bd,0) * 100%));backdrop-filter:blur(5px);color:rgba(255,100,80,0.9);font-size:16px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;pointer-events:auto;touch-action:none;user-select:none;-webkit-user-select:none;transition:border-color .1s,color .1s;}
   #brakeBtn.on{display:flex;}
-  #brakeBtn.active{background:rgba(200,18,8,.85);border-color:rgba(255,110,90,.95);color:#fff;}
+  #brakeBtn.active{border-color:rgba(255,110,90,0.95);color:#fff;}
   .screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;pointer-events:none;}
   .screen.hidden{display:none;}
   .veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,12,6,.6) 0%,rgba(8,12,6,.28) 40%,rgba(8,12,6,.82) 100%);}
@@ -281,7 +281,7 @@ let W,H,DPR,laneW,lanes,roadX,roadW,shoulderW;
 const LANES=4, SS=2;
 function resize(){
   DPR=Math.min(window.devicePixelRatio||1,2);
-  W=Math.min(window.innerWidth,460); H=window.innerHeight;
+  W=Math.min(window.innerWidth,460); H=document.getElementById('wrap').clientHeight||window.innerHeight;
   cv.width=W*DPR; cv.height=H*DPR; cv.style.width=W+'px'; cv.style.height=H+'px';
   ctx.setTransform(DPR,0,0,DPR,0,0);
   roadW=Math.min(W*0.82,380); shoulderW=roadW*0.085; roadX=(W-roadW)/2;
@@ -597,7 +597,7 @@ let diff='normal';
 let paused=false;
 let state='menu',score=0,best=0,speed=6,scroll=0,spawnTimer=0;
 let player,enemies=[],signs=[],segIndex=0,segStart=0,tunnelAmt=0;
-let braking=false;
+let braking=false,brakeDepth=0,brakeFactor=1;
 let pickups=[],particles=[],floats=[],pickupTimer=160,freeUntil=0,flash=0,fc=0;
 const M2S=m=>m/5;                       // 1 Score-Einheit = 5 m  (km = score/200)
 const carW=()=>Math.min(laneW*0.66,52), carH=()=>carW()*1.7;
@@ -610,7 +610,7 @@ buildTextures(); player=newPlayer(); resize();
 window.addEventListener('resize',()=>{resize();buildTextures();});
 player.x=player.targetX=lanes[1]; player.y=H-carH()*1.7;
 
-function resetRun(){score=0;speed=DIFF[diff].base;scroll=0;spawnTimer=0;enemies=[];signs=[];segIndex=0;segStart=0;tunnelAmt=0;braking=false;
+function resetRun(){score=0;speed=DIFF[diff].base;scroll=0;spawnTimer=0;enemies=[];signs=[];segIndex=0;segStart=0;tunnelAmt=0;braking=false;brakeDepth=0;brakeFactor=1;
   pickups=[];particles=[];floats=[];pickupTimer=160;freeUntil=0;flash=0;
   player=newPlayer();player.x=player.targetX=lanes[1];player.y=H-carH()*1.7;document.getElementById('placeName').textContent=ROUTE[0].name;}
 
@@ -620,15 +620,17 @@ cv.addEventListener('pointerdown',e=>{const x=e.clientX-cv.getBoundingClientRect
 window.addEventListener('keydown',e=>{
   if(e.key==='Escape'||e.key==='p'||e.key==='P'){if(paused)resumeGame();else pauseGame();}
   if(e.key==='ArrowLeft')move(-1);if(e.key==='ArrowRight')move(1);
-  if((e.key==='ArrowDown'||e.key==='b'||e.key==='B')&&state==='play'){braking=true;e.preventDefault();}
+  if((e.key==='ArrowDown'||e.key==='b'||e.key==='B')&&state==='play'){braking=true;brakeDepth=0.7;e.preventDefault();}
 });
 window.addEventListener('keyup',e=>{
-  if(e.key==='ArrowDown'||e.key==='b'||e.key==='B'){braking=false;}
+  if(e.key==='ArrowDown'||e.key==='b'||e.key==='B'){braking=false;brakeDepth=0;}
 });
 (()=>{const bb=document.getElementById('brakeBtn');
-  bb.addEventListener('pointerdown',e=>{if(state!=='play')return;braking=true;bb.classList.add('active');e.stopPropagation();});
-  window.addEventListener('pointerup',()=>{braking=false;bb.classList.remove('active');});
-  window.addEventListener('pointercancel',()=>{braking=false;bb.classList.remove('active');});
+  function updBD(e){const r=bb.getBoundingClientRect();brakeDepth=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height));bb.style.setProperty('--bd',brakeDepth.toFixed(3));}
+  bb.addEventListener('pointerdown',e=>{if(state!=='play')return;braking=true;bb.classList.add('active');bb.setPointerCapture(e.pointerId);e.stopPropagation();updBD(e);});
+  bb.addEventListener('pointermove',e=>{if(braking)updBD(e);});
+  bb.addEventListener('pointerup',()=>{braking=false;brakeDepth=0;bb.classList.remove('active');bb.style.setProperty('--bd','0');});
+  bb.addEventListener('pointercancel',()=>{braking=false;brakeDepth=0;bb.classList.remove('active');bb.style.setProperty('--bd','0');});
 })();
 
 /* ============ spawn ============ */
@@ -874,7 +876,10 @@ function frame(){
     tunnelAmt+=((ROUTE[segIndex].type==='tunnel'?1:0)-tunnelAmt)*0.04;
     if(player.hit>0)player.hit--;
     // Sprung (Rampe): Auto fliegt hoch, Welt rauscht in Echtzeit schneller drunter durch
-    let eff=speed*(braking&&player.air<=0?0.38:1);
+    const bkTarget=(braking&&player.air<=0)?Math.max(0.04,1-brakeDepth*0.96):1;
+    if(brakeFactor>bkTarget)brakeFactor=Math.max(bkTarget,brakeFactor-0.08);
+    else brakeFactor=Math.min(1,brakeFactor+0.014);
+    let eff=speed*brakeFactor;
     if(player.air>0){ eff=speed+player.jumpBoost/0.18; player.air+=1/player.jumpDur;
       if(player.air>=1){player.air=0;dust(player.x,player.y+carH()*0.4);AU.land();} }
     scroll+=eff-speed;
@@ -941,9 +946,9 @@ function crash(){paused=false;state='over';best=Math.max(best,score);AU.engineSt
   if(km>799)v='Füssen – fast da! Vollgas zum Grenztunnel!';
   if(km>803)v='Grenztunnel Füssen erreicht – absolut legendär!';
   document.getElementById('verdict').textContent=v;
-  document.getElementById('hud').classList.remove('on');document.getElementById('place').classList.remove('on');document.getElementById('speedoBox').classList.remove('on');document.getElementById('brakeBtn').classList.remove('on');braking=false;document.getElementById('over').classList.remove('hidden');}
+  document.getElementById('hud').classList.remove('on');document.getElementById('place').classList.remove('on');document.getElementById('speedoBox').classList.remove('on');document.getElementById('brakeBtn').classList.remove('on');braking=false;brakeDepth=0;brakeFactor=1;document.getElementById('over').classList.remove('hidden');}
 function startGame(){AU.resume();AU.click();resetRun();state='play';paused=false;AU.engineStart();document.getElementById('menu').classList.add('hidden');document.getElementById('over').classList.add('hidden');document.getElementById('pause').classList.add('hidden');document.getElementById('hud').classList.add('on');document.getElementById('place').classList.add('on');document.getElementById('speedoBox').classList.add('on');document.getElementById('pauseBtn').classList.add('on');document.getElementById('ghostHud').classList.toggle('on',diff==='ghost');document.getElementById('brakeBtn').classList.add('on');}
-function toMenu(){paused=false;AU.engineStop();AU.click();state='menu';enemies=[];signs=[];pickups=[];particles=[];floats=[];tunnelAmt=0;player=newPlayer();player.x=player.targetX=lanes[1];player.y=H-carH()*1.7;refreshMenuStats();document.getElementById('speedoBox').classList.remove('on');document.getElementById('over').classList.add('hidden');document.getElementById('pause').classList.add('hidden');document.getElementById('pauseBtn').classList.remove('on');document.getElementById('ghostHud').classList.remove('on');document.getElementById('brakeBtn').classList.remove('on');braking=false;document.getElementById('menu').classList.remove('hidden');}
+function toMenu(){paused=false;AU.engineStop();AU.click();state='menu';enemies=[];signs=[];pickups=[];particles=[];floats=[];tunnelAmt=0;player=newPlayer();player.x=player.targetX=lanes[1];player.y=H-carH()*1.7;refreshMenuStats();document.getElementById('speedoBox').classList.remove('on');document.getElementById('over').classList.add('hidden');document.getElementById('pause').classList.add('hidden');document.getElementById('pauseBtn').classList.remove('on');document.getElementById('ghostHud').classList.remove('on');document.getElementById('brakeBtn').classList.remove('on');braking=false;brakeDepth=0;brakeFactor=1;document.getElementById('menu').classList.remove('hidden');}
 function openShop(){AU.resume();AU.click();renderShop();document.getElementById('menu').classList.add('hidden');document.getElementById('over').classList.add('hidden');document.getElementById('shop').classList.remove('hidden');}
 function closeShop(){AU.click();document.getElementById('shop').classList.add('hidden');refreshMenuStats();document.getElementById('menu').classList.remove('hidden');}
 function renderShop(){
