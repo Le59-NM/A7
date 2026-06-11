@@ -1058,7 +1058,8 @@ function frame(){
 }
 function crash(){paused=false;state='over';best=Math.max(best,score);AU.engineStop();AU.crash();
   document.getElementById('pauseBtn').classList.remove('on');document.getElementById('ghostHud').classList.remove('on');document.getElementById('pause').classList.add('hidden');
-  const earned=Math.floor(score/2);coins+=earned;Store.save();
+  const coinMul={chill:1,normal:1.75,brutal:3,ghost:1}[diff]||1;
+  const earned=Math.floor(score/2*coinMul);coins+=earned;Store.save();
   document.getElementById('finalScore').textContent=kmTxt(score);document.getElementById('finalBest').textContent=kmTxt(best);
   document.getElementById('earned').textContent='+'+earned.toLocaleString('de-DE')+' Coins';
   const km=score/200;let v='Auf dem Standstreifen gelandet.';
