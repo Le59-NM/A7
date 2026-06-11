@@ -817,9 +817,10 @@ function spawn(ambient){
         :ls[0]+Math.random()*ls[1];               // spurgerecht
     return {wobPhase:Math.random()*6.283,wobAmp:2+Math.random()*3,wobFreq:0.016+Math.random()*0.018,bobAmp:0.4+Math.random()*0.8,bobFreq:0.038+Math.random()*0.032,speedMul};
   };
-  enemies.push({lane,x:lanes[lane],baseX:lanes[lane],y:-carH()*(truck?2.5:1.2),truck,kind,col,cab,key:truck?`t|${col}|${cab}`:`${kind}|${col}`,...rw(lane)});
-  if(!ambient&&!truck&&Math.random()<0.4){let l2=(lane+2)%LANES;const k=KINDS[Math.random()*KINDS.length|0],c2=COLS[COLS.length*Math.random()|0];
-    enemies.push({lane:l2,x:lanes[l2],baseX:lanes[l2],y:-carH()*(1.4+Math.random()*0.6),truck:false,kind:k,col:c2,key:`${k}|${c2}`,...rw(l2)});}
+  const rs=truck?0.07+Math.random()*0.06:0.10+Math.random()*0.10; // eigene Weltgeschwindigkeit (0=steht, 1=gleich schnell wie Spieler)
+  enemies.push({lane,x:lanes[lane],baseX:lanes[lane],y:-carH()*(truck?2.5:1.2),truck,kind,col,cab,relSpd:rs,key:truck?`t|${col}|${cab}`:`${kind}|${col}`,...rw(lane)});
+  if(!ambient&&!truck&&Math.random()<0.4){let l2=(lane+2)%LANES;const k=KINDS[Math.random()*KINDS.length|0],c2=COLS[COLS.length*Math.random()|0];const rs2=0.10+Math.random()*0.10;
+    enemies.push({lane:l2,x:lanes[l2],baseX:lanes[l2],y:-carH()*(1.4+Math.random()*0.6),truck:false,kind:k,col:c2,relSpd:rs2,key:`${k}|${c2}`,...rw(l2)});}
 }
 
 /* ============ Power-ups ============ */
@@ -1149,8 +1150,9 @@ function frame(){
     if(score>=freeUntil && (spawnTimer+=brakeFactor)>=gap && enemies.length<cfg.maxNpc){spawnTimer=0;spawn(false);}
     if(--pickupTimer<=0){pickupTimer=180+(Math.random()*160|0);spawnPickup();}
     const h=carH(), invuln=player.air>0||score<freeUntil;
-    const npcEff=player.air>0?eff:speed;  // NPCs ignorieren brakeFactor, reagieren aber auf Sprung
-    for(const e of enemies){e.y+=npcEff*(e.speedMul||1);if(e.baseX!==undefined)e.x=e.baseX+Math.sin(fc*(e.wobFreq||0.02)+(e.wobPhase||0))*(e.wobAmp||0);const eh=h*(e.truck?2.35:1);
+    // NPCs haben eigene Weltgeschwindigkeit: e.y += eff - speed*relSpd
+    // Bei bremsen (eff sinkt) nähern sich NPCs langsamer oder bleiben zurück — kein mitbremsen
+    for(const e of enemies){const rs=e.relSpd??0.12;e.y+=(eff-speed*rs)*(e.speedMul||1);if(e.baseX!==undefined)e.x=e.baseX+Math.sin(fc*(e.wobFreq||0.02)+(e.wobPhase||0))*(e.wobAmp||0);const eh=h*(e.truck?2.35:1);
       if(diff!=='ghost'&&!invuln&&Math.abs(e.x-player.x)<carW()*0.6&&Math.abs(e.y-player.y)<(eh+h)/2*0.82){crash();return;}
       // Beinahe-Kollision: NPC passiert Spieler mit knappem Abstand
       if(!e.passed&&e.y>player.y+h*0.55){e.passed=true;
