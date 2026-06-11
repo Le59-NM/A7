@@ -877,8 +877,8 @@ function frame(){
     if(player.hit>0)player.hit--;
     // Sprung (Rampe): Auto fliegt hoch, Welt rauscht in Echtzeit schneller drunter durch
     const bkTarget=(braking&&player.air<=0)?Math.max(0.04,1-brakeDepth*0.96):1;
-    if(brakeFactor>bkTarget)brakeFactor=Math.max(bkTarget,brakeFactor-0.08);
-    else brakeFactor=Math.min(1,brakeFactor+0.014);
+    if(brakeFactor>bkTarget)brakeFactor=Math.max(bkTarget,brakeFactor-Math.max(0.004,brakeDepth*0.013));
+    else brakeFactor=Math.min(1,brakeFactor+0.010);
     let eff=speed*brakeFactor;
     if(player.air>0){ eff=speed+player.jumpBoost/0.18; player.air+=1/player.jumpDur;
       if(player.air>=1){player.air=0;dust(player.x,player.y+carH()*0.4);AU.land();} }
@@ -892,7 +892,7 @@ function frame(){
     player.x+=(player.targetX-player.x)*0.25;
     // Verkehr (nicht während freier Fahrt)
     const gap=Math.max(30,cfg.gap-score*0.012);
-    if(score>=freeUntil && ++spawnTimer>=gap){spawnTimer=0;spawn(false);}
+    if(score>=freeUntil && (spawnTimer+=brakeFactor)>=gap){spawnTimer=0;spawn(false);}
     if(--pickupTimer<=0){pickupTimer=180+(Math.random()*160|0);spawnPickup();}
     const h=carH(), invuln=player.air>0||score<freeUntil;
     for(const e of enemies){e.y+=eff*(e.speedMul||1);if(e.baseX!==undefined)e.x=e.baseX+Math.sin(fc*(e.wobFreq||0.02)+(e.wobPhase||0))*(e.wobAmp||0);const eh=h*(e.truck?2.35:1);
