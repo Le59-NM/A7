@@ -11,8 +11,9 @@
 <title>A7 RUN · Hamburg</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-  html,body{height:100%;background:#10160c;overflow:hidden;font-family:'Inter',system-ui,sans-serif;}
-  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#10160c;}
+  html{height:-webkit-fill-available;height:100dvh;}
+  body{min-height:-webkit-fill-available;min-height:100dvh;height:100%;background:#10160c;overflow:hidden;font-family:'Inter',system-ui,sans-serif;}
+  #wrap{position:fixed;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;background:#10160c;}
   canvas{display:block;touch-action:none;}
   .hud{position:absolute;top:0;left:0;right:0;padding:calc(14px + env(safe-area-inset-top)) 16px 14px;display:none;justify-content:space-between;align-items:flex-start;pointer-events:none;font-variant-numeric:tabular-nums;}
   .hud.on{display:flex;}
@@ -27,10 +28,13 @@
   .speedo.on{display:flex;}
   .speedo .num{font-size:30px;font-weight:800;color:#fff;line-height:1;font-variant-numeric:tabular-nums;text-shadow:0 0 12px rgba(120,220,255,.4);}
   .speedo .unit{font-size:10px;letter-spacing:.18em;color:#9fb3c7;text-transform:uppercase;margin-top:3px;}
+  #brakeBtn{position:absolute;bottom:calc(24px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:55;display:none;flex-direction:column;align-items:center;justify-content:center;width:190px;height:78px;border-radius:18px;border:2px solid rgba(255,70,50,0.45);background:linear-gradient(to top,rgba(190,12,2,0.88) calc(var(--bd,0) * 100%),rgba(22,6,4,0.72) calc(var(--bd,0) * 100%));backdrop-filter:blur(5px);color:rgba(255,100,80,0.9);font-size:16px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;pointer-events:auto;touch-action:none;user-select:none;-webkit-user-select:none;transition:border-color .1s,color .1s;}
+  #brakeBtn.on{display:flex;}
+  #brakeBtn.active{border-color:rgba(255,110,90,0.95);color:#fff;}
   .screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;pointer-events:none;}
   .screen.hidden{display:none;}
   .veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,12,6,.6) 0%,rgba(8,12,6,.28) 40%,rgba(8,12,6,.82) 100%);}
-  #menu{justify-content:space-between;padding:64px 26px 30px;}
+  #menu{justify-content:space-between;padding:52px 26px 22px;}
   .top{position:relative;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;}
   .logo{display:flex;align-items:center;gap:13px;}
   .logo .badge{background:#0050a0;border:3px solid #fff;border-radius:11px;padding:7px 18px;font-size:46px;font-weight:900;color:#fff;box-shadow:0 8px 26px rgba(0,0,0,.5);}
@@ -39,12 +43,12 @@
   .record{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;margin-top:6px;}
   .record .l{font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:#c7d0bd;text-shadow:0 1px 3px rgba(0,0,0,.8);}
   .record .v{font-size:22px;font-weight:800;color:#ffd23f;text-shadow:0 2px 8px rgba(0,0,0,.7);}
-  .bottom{position:relative;display:flex;flex-direction:column;align-items:center;gap:18px;width:100%;max-width:360px;pointer-events:auto;}
+  .bottom{position:relative;display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;max-width:360px;pointer-events:auto;}
   .difflabel{font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:#c7d0bd;text-shadow:0 1px 3px rgba(0,0,0,.8);}
   .seg{display:flex;gap:8px;width:100%;}
   .seg button{flex:1;cursor:pointer;border:1.5px solid rgba(255,255,255,.35);background:rgba(10,14,8,.5);color:#dfe6d8;padding:11px 0;border-radius:12px;font-size:13px;font-weight:700;letter-spacing:.05em;backdrop-filter:blur(4px);transition:all .14s ease;}
   .seg button.sel{background:#fff;color:#11250e;border-color:#fff;box-shadow:0 4px 16px rgba(0,0,0,.4);}
-  .play{width:100%;cursor:pointer;border:none;padding:18px 0;border-radius:100px;font-size:18px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:#1a1200;background:linear-gradient(95deg,#ffd23f,#ffe680);box-shadow:0 8px 28px rgba(255,210,63,.45);transition:transform .12s ease;}
+  .play{width:100%;cursor:pointer;border:none;padding:15px 0;border-radius:100px;font-size:17px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:#1a1200;background:linear-gradient(95deg,#ffd23f,#ffe680);box-shadow:0 8px 28px rgba(255,210,63,.45);transition:transform .12s ease;}
   .play:active{transform:scale(.97);}
   .route{display:flex;flex-wrap:wrap;justify-content:center;gap:5px;}
   .route span{font-size:10px;color:#dfe6d8;background:rgba(0,80,160,.55);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:3px 9px;backdrop-filter:blur(3px);text-shadow:0 1px 2px rgba(0,0,0,.6);}
@@ -59,7 +63,15 @@
   .stats .l{font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:#c7d0bd;text-shadow:0 1px 3px rgba(0,0,0,.8);}
   .stats .v{font-size:22px;font-weight:800;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.7);}
   .stats .v.gold{color:#ffd23f;}
-  .ghost2{background:rgba(255,255,255,.12)!important;color:#fff!important;border:1.5px solid rgba(255,255,255,.4)!important;box-shadow:none!important;font-size:14px!important;padding:14px 0!important;backdrop-filter:blur(4px);}
+  .ghost2{background:rgba(255,255,255,.12)!important;color:#fff!important;border:1.5px solid rgba(255,255,255,.4)!important;box-shadow:none!important;font-size:13px!important;padding:12px 0!important;backdrop-filter:blur(4px);}
+  #menu{overflow:hidden;padding:0 !important;}
+  #pagesWrap{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;width:200%;transition:transform .35s cubic-bezier(.25,.46,.45,.94);pointer-events:auto;}
+  .mpage{width:50%;height:100%;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:52px 26px 36px;}
+  #pageGarage{padding:0;justify-content:flex-start;}
+  #pageDots{position:absolute;bottom:calc(14px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:30;pointer-events:none;}
+  .pdot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.25);transition:background .2s,transform .2s;}
+  .pdot.active{background:rgba(255,255,255,.9);transform:scale(1.25);}
+  .acard.locked{opacity:0.72;border-color:rgba(255,255,255,.09);}
   .earned{font-size:15px;font-weight:800;color:#ffd23f;text-shadow:0 2px 8px rgba(0,0,0,.6);}
   .shopwrap{position:relative;width:100%;max-width:430px;height:100%;display:flex;flex-direction:column;padding:54px 18px 22px;gap:14px;pointer-events:auto;}
   .shophead{display:flex;justify-content:space-between;align-items:center;}
@@ -76,6 +88,22 @@
   .cbtn{width:100%;border:none;border-radius:10px;padding:9px 0;font-size:12px;font-weight:800;letter-spacing:.04em;cursor:pointer;color:#11250e;background:#fff;}
   .cbtn.buy{background:#ffd23f;color:#1a1200;}
   .cbtn.on{background:rgba(255,210,63,.2);color:#ffd23f;cursor:default;}
+  .acard{background:rgba(12,18,10,.65);border:1.5px solid rgba(255,255,255,.16);border-radius:18px;padding:16px 16px 14px;display:flex;gap:14px;align-items:flex-start;backdrop-filter:blur(4px);}
+  .acard.active{border-color:#ffd23f;box-shadow:0 0 0 1px #ffd23f,0 6px 20px rgba(255,210,63,.2);}
+  .acard .aprev{flex:0 0 54px;display:flex;align-items:center;justify-content:center;}
+  .acard .ainfo{flex:1;display:flex;flex-direction:column;gap:5px;}
+  .acard .aname{font-size:15px;font-weight:800;color:#fff;}
+  .acard .adesc{font-size:11px;color:#9db09a;letter-spacing:.06em;}
+  .acard .specs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:6px 0 4px;}
+  .acard .spec{background:rgba(255,255,255,.07);border-radius:8px;padding:6px 4px;text-align:center;}
+  .acard .spec .sv{font-size:13px;font-weight:800;color:#fff;}
+  .acard .spec .sl{font-size:9px;color:#8a9e88;letter-spacing:.1em;text-transform:uppercase;margin-top:1px;}
+  .sbars{display:flex;flex-direction:column;gap:5px;}
+  .sbar-row{display:flex;align-items:center;gap:7px;}
+  .sbar-lbl{font-size:9px;color:#8a9e88;text-transform:uppercase;letter-spacing:.1em;width:48px;flex-shrink:0;}
+  .sbar{flex:1;height:5px;background:rgba(255,255,255,.12);border-radius:3px;overflow:hidden;}
+  .sbar-fill{height:100%;background:linear-gradient(90deg,#2a6e2a,#5bc95b);border-radius:3px;}
+  .acard .cbtn{margin-top:8px;}
   #over{justify-content:center;gap:18px;padding:26px;}
   #over .inner{position:relative;display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center;pointer-events:auto;}
   .crash{font-size:38px;font-weight:900;color:#fff;letter-spacing:.05em;text-shadow:0 3px 14px rgba(0,0,0,.7);}
@@ -90,9 +118,9 @@
   .btn:active{transform:scale(.96);}
   .btn.primary{color:#1a1200;background:linear-gradient(95deg,#ffd23f,#ffe680);box-shadow:0 6px 20px rgba(255,210,63,.4);}
   .btn.ghost{color:#fff;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.4);backdrop-filter:blur(4px);}
-  #pauseBtn{position:absolute;top:calc(10px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:60;width:36px;height:36px;border-radius:50%;border:1.5px solid rgba(255,255,255,.28);background:rgba(10,14,8,.52);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;cursor:pointer;pointer-events:auto;}
+  #pauseBtn{position:absolute;top:calc(10px + env(safe-area-inset-top));right:calc(14px + env(safe-area-inset-right));z-index:60;width:36px;height:36px;border-radius:50%;border:1.5px solid rgba(255,255,255,.28);background:rgba(10,14,8,.52);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;cursor:pointer;pointer-events:auto;}
   #pauseBtn.on{display:flex;}
-  #pauseBtn:active{transform:translateX(-50%) scale(.93);}
+  #pauseBtn:active{transform:scale(.93);}
   #pause{justify-content:center;gap:18px;padding:26px;}
   .pmenu{position:relative;display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center;pointer-events:auto;width:100%;max-width:360px;}
   .ptitle{font-size:32px;font-weight:900;color:#fff;letter-spacing:.06em;text-shadow:0 3px 14px rgba(0,0,0,.7);}
@@ -114,28 +142,45 @@
   </div>
   <div class="place" id="place"><span class="shield">A7</span><span class="name" id="placeName">Schnelsen</span></div>
   <div class="speedo" id="speedoBox"><span class="num" id="speedo">0</span><span class="unit">km/h</span></div>
+  <button id="brakeBtn" aria-label="Bremsen">BREMSE</button>
 
   <div class="screen" id="menu">
     <div class="veil"></div>
-    <div class="top">
-      <div class="logo"><span class="badge">A7</span><span class="word">RUN</span></div>
-      <div class="tag">Hamburg → Grenztunnel Füssen</div>
-      <div class="stats">
-        <div><span class="l">Rekord</span><span class="v" id="rec">—</span></div>
-        <div><span class="l">Coins</span><span class="v gold" id="coins">0</span></div>
+    <div id="pagesWrap">
+      <div class="mpage" id="pageMain">
+        <div class="top">
+          <div class="logo"><span class="badge">A7</span><span class="word">RUN</span></div>
+          <div class="tag">Hamburg → Grenztunnel Füssen</div>
+          <div class="stats">
+            <div><span class="l">Rekord</span><span class="v" id="rec">—</span></div>
+            <div><span class="l">Coins</span><span class="v gold" id="coins">0</span></div>
+          </div>
+        </div>
+        <div class="bottom">
+          <div class="difflabel">Schwierigkeit</div>
+          <div class="seg" id="seg">
+            <button data-d="chill">Chill</button>
+            <button data-d="normal" class="sel">Normal</button>
+            <button data-d="brutal">Brutal</button>
+            <button data-d="ghost">Ghost</button>
+          </div>
+          <button class="play" id="play">Losfahren</button>
+          <div class="hint">Tippen links / rechts · Desktop ← →</div>
+        </div>
+      </div>
+      <div class="mpage" id="pageGarage">
+        <div class="shopwrap">
+          <div class="shophead">
+            <span class="stitle">Autos</span>
+            <span class="balance">Coins <b id="grgCoins">0</b></span>
+          </div>
+          <div id="garageGrid" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:2px 2px 80px;"></div>
+        </div>
       </div>
     </div>
-    <div class="bottom">
-      <div class="difflabel">Schwierigkeit</div>
-      <div class="seg" id="seg">
-        <button data-d="chill">Chill</button>
-        <button data-d="normal" class="sel">Normal</button>
-        <button data-d="brutal">Brutal</button>
-        <button data-d="ghost">Ghost</button>
-      </div>
-      <button class="play" id="play">Losfahren</button>
-      <button class="play ghost2" id="shopBtn">Shop · Autos</button>
-      <div class="hint">Tippen links / rechts · Desktop ← →</div>
+    <div id="pageDots">
+      <span class="pdot active"></span>
+      <span class="pdot"></span>
     </div>
   </div>
 
@@ -164,6 +209,16 @@
       </div>
       <div class="grid" id="shopGrid"></div>
       <button class="btn ghost" id="shopBack">Zurück</button>
+    </div>
+  </div>
+  <div class="screen hidden" id="autos">
+    <div class="veil"></div>
+    <div class="shopwrap">
+      <div class="shophead">
+        <span class="stitle">Meine Autos</span>
+      </div>
+      <div id="autosGrid" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:2px;"></div>
+      <button class="btn ghost" id="autosBack">Zurück</button>
     </div>
   </div>
   <button id="mute" aria-label="Ton"></button>
@@ -456,17 +511,21 @@ function sprite(key,kind,color,cab){ return spriteCache[key] || (spriteCache[key
 
 /* ============ Autos / Shop ============ */
 const CARS=[
-  {id:'golfr',  name:'Golf R',        price:0,    kind:'sport', color:'#16386e'},
-  {id:'gti',    name:'GTI',           price:600,  kind:'hatch', color:'#c0392b', stripe:'#15171c'},
-  {id:'taxi',   name:'Hamburg Taxi',  price:900,  kind:'sedan', color:'#e7d9a8'},
-  {id:'polizei',name:'Polizei',       price:1300, kind:'suv',   color:'#1f6f43', roof:'#ededed'},
-  {id:'bulli',  name:'VW Bulli',      price:1800, kind:'van',   color:'#2aa1c8', roof:'#f2f2f2'},
-  {id:'gklasse',name:'G-Klasse',      price:2600, kind:'suv',   color:'#15161a'},
-  {id:'super',  name:'Supersportler', price:4200, kind:'sport', color:'#f4c20d', stripe:'#15171c'},
-  {id:'drift',  name:'Drift Neon',    price:6500, kind:'sport', color:'#111418', stripe:'#19f0d8'},
+  {id:'fiesta', name:'Ford Fiesta 1.1 Trend', price:0, kind:'hatch', color:'#edeef0',
+   displacement:1084, power:55, ps:75, cylinders:3,
+   maxKmh:170, rampMul:0.70, handling:0.19,
+   desc:'1.1 EcoBoost · 3-Zyl.'},
+  {id:'a200', name:'Mercedes A 200', price:35000, kind:'hatch', color:'#c2c5cc',
+   displacement:1332, power:120, ps:163, cylinders:4,
+   maxKmh:225, rampMul:1.10, handling:0.26,
+   desc:'1.3T 7G-DCT · Mild Hybrid · 270 Nm'},
+  {id:'amggt63', name:'Mercedes AMG GT 63', price:185000, kind:'sport', color:'#0c0e11', stripe:'#1a1f24',
+   displacement:3982, power:450, ps:612, cylinders:8,
+   maxKmh:317, rampMul:1.90, handling:0.32,
+   desc:'3.9L V8 · AMG MCT 9G · 850 Nm · AWD'},
 ];
 const carDef=id=>CARS.find(c=>c.id===id)||CARS[0];
-let coins=0, owned={golfr:true}, sel='golfr';
+let coins=0, owned={fiesta:true}, sel='fiesta';
 function buildSkinSprite(def,w,h){const c=document.createElement('canvas');c.width=w;c.height=h;
   drawCarBody(c.getContext('2d'),w,h,w*0.06,def.kind,def.color,def.roof,def.stripe);return c;}
 
@@ -485,7 +544,7 @@ const Store={
     if(c!=null)coins=+c||0;
     if(o!=null){try{owned=JSON.parse(o);}catch(e){}}
     if(s!=null)sel=s;
-    if(!owned||!owned.golfr){owned=owned||{};owned.golfr=true;} if(!owned[sel])sel='golfr';
+    if(!owned||!owned.fiesta){owned=owned||{};owned.fiesta=true;} if(!owned[sel])sel='fiesta';
     refreshMenuStats();
   },
   async save(){
@@ -495,56 +554,157 @@ const Store={
   }
 };
 function refreshMenuStats(){const rc=document.getElementById('rec');if(rc)rc.textContent=best>0?kmTxt(best):'—';
-  const cc=document.getElementById('coins');if(cc)cc.textContent=Math.round(coins).toLocaleString('de-DE');}
+  const cc=document.getElementById('coins');if(cc)cc.textContent=Math.round(coins).toLocaleString('de-DE');
+  const gc=document.getElementById('grgCoins');if(gc)gc.textContent=Math.round(coins).toLocaleString('de-DE');}
 
 /* ============ config / state ============ */
 const ROUTE=[
-  // Hamburg
-  {name:'Schnelsen',type:'open',len:1300},{name:'Tunnel Schnelsen',type:'tunnel',len:850},
-  {name:'Eidelstedt',type:'open',len:1200},{name:'Tunnel Stellingen',type:'tunnel',len:850},
-  {name:'Volkspark',type:'open',len:1200},{name:'Tunnel Altona',type:'tunnel',len:850},
-  {name:'Othmarschen',type:'open',len:1100},{name:'Elbtunnel',type:'tunnel',len:1600},
-  {name:'Heimfeld',type:'open',len:1400},
-  // Niedersachsen
-  {name:'Harburg',type:'open',len:1300},
-  {name:'Lüneburger Heide',type:'open',len:2400},
-  {name:'Soltau',type:'open',len:1800},
-  {name:'Walsrode',type:'open',len:1600},
-  // Hannover
-  {name:'Hannover',type:'open',len:2000},
-  // Südniedersachsen
-  {name:'Northeim',type:'open',len:1800},
-  {name:'Göttingen',type:'open',len:1800},
-  // Hessen
-  {name:'Hann. Münden',type:'open',len:1200},
-  {name:'Bad Hersfeld',type:'open',len:1800},
-  {name:'Knüllwald',type:'open',len:1400},
-  {name:'Tunnel Knüll',type:'tunnel',len:700},
-  {name:'Fulda',type:'open',len:1800},
-  // Unterfranken
+  // Hamburg – Tunnelbereich (km 0–18)
+  {name:'Hamburg-Schnelsen',type:'open',len:200},
+  {name:'Tunnel Schnelsen',type:'tunnel',len:200},
+  {name:'Dreieck Hamburg-Nordwest',type:'open',len:200},
+  {name:'Tunnel Stellingen',type:'tunnel',len:200},
+  {name:'Hamburg-Stellingen',type:'open',len:100},
+  {name:'Tunnel Altona',type:'tunnel',len:300},
+  {name:'Hamburg-Volkspark',type:'open',len:300},
+  {name:'Hamburg-Bahrenfeld',type:'open',len:400},
+  {name:'Hamburg-Othmarschen',type:'open',len:200},
+  {name:'Elbtunnel',type:'tunnel',len:600},
+  {name:'Hamburg-Hausbruch',type:'open',len:400},
+  {name:'Hamburg-Heimfeld',type:'open',len:400},
+  // Hamburger Süden / Harburg (km 18–46)
+  {name:'Dreieck Hamburg-Südwest',type:'open',len:400},
+  {name:'Hamburg-Marmstorf',type:'open',len:600},
+  {name:'Fleestedt',type:'open',len:400},
+  {name:'Maschener Kreuz',type:'open',len:600},
+  {name:'Horster Dreieck',type:'open',len:1000},
+  {name:'Seevetal-Ramelsloh',type:'open',len:1000},
+  {name:'Thieshope',type:'open',len:1200},
+  {name:'Garlstorf',type:'open',len:1000},
+  // Lüneburger Heide (km 46–114)
+  {name:'Egestorf',type:'open',len:1200},
+  {name:'Evendorf',type:'open',len:1200},
+  {name:'Bispingen',type:'open',len:1200},
+  {name:'Schneverdingen',type:'open',len:1200},
+  {name:'Soltau-Ost',type:'open',len:1000},
+  {name:'Soltau-Süd',type:'open',len:1800},
+  {name:'Dorfmark',type:'open',len:1200},
+  {name:'Bad Fallingbostel',type:'open',len:1200},
+  {name:'Dreieck Walsrode',type:'open',len:1400},
+  {name:'Westenholz',type:'open',len:1200},
+  {name:'Schwarmstedt',type:'open',len:1800},
+  // Hannover (km 114–167)
+  {name:'Berkhof',type:'open',len:1000},
+  {name:'Mellendorf',type:'open',len:1000},
+  {name:'Dreieck Hannover-Nord',type:'open',len:800},
+  {name:'Großburgwedel',type:'open',len:1200},
+  {name:'Altwarmbüchen',type:'open',len:1000},
+  {name:'Kreuz Hannover-Kirchhorst',type:'open',len:1200},
+  {name:'Kreuz Hannover-Ost',type:'open',len:400},
+  {name:'Hannover-Anderten',type:'open',len:1400},
+  {name:'Laatzen',type:'open',len:800},
+  {name:'Dreieck Hannover-Süd',type:'open',len:1400},
+  // Südniedersachsen / Harz (km 167–263)
+  {name:'Hildesheim-Drispenstedt',type:'open',len:1000},
+  {name:'Hildesheim',type:'open',len:1800},
+  {name:'Derneburg/Salzgitter',type:'open',len:1000},
+  {name:'Dreieck Salzgitter',type:'open',len:1400},
+  {name:'Bockenem',type:'open',len:1400},
+  {name:'Rhüden (Harz)',type:'open',len:1400},
+  {name:'Seesen (Harz)',type:'open',len:2200},
+  {name:'Echte',type:'open',len:2000},
+  {name:'Northeim-Nord',type:'open',len:1000},
+  {name:'Northeim-West',type:'open',len:1800},
+  {name:'Nörten-Hardenberg',type:'open',len:1800},
+  {name:'Göttingen-Nord',type:'open',len:1000},
+  {name:'Göttingen',type:'open',len:1200},
+  {name:'Dreieck Drammetal',type:'open',len:2000},
+  // Nordhessen (km 263–367)
+  {name:'Hann. Münden-Hedemünden',type:'open',len:1400},
+  {name:'Staufenberg-Lutterberg',type:'open',len:1800},
+  {name:'Kassel-Nord',type:'open',len:1000},
+  {name:'Kassel-Ost',type:'open',len:800},
+  {name:'Kreuz Kassel-Mitte',type:'open',len:800},
+  {name:'Dreieck Kassel-Süd',type:'open',len:2000},
+  {name:'Guxhagen',type:'open',len:1400},
+  {name:'Melsungen',type:'open',len:1000},
+  {name:'Malsfeld',type:'open',len:1800},
+  {name:'Homberg (Efze)',type:'open',len:3000},
+  {name:'Bad Hersfeld-West',type:'open',len:1200},
+  {name:'Kirchheimer Dreieck',type:'open',len:400},
+  {name:'Kirchheim',type:'open',len:1000},
+  {name:'Hattenbacher Dreieck',type:'open',len:800},
+  // Fulda / Rhön (km 367–409)
+  {name:'Niederaula',type:'open',len:3200},
+  {name:'Hünfeld/Schlitz',type:'open',len:2400},
+  {name:'Fulda-Nord',type:'open',len:1200},
+  {name:'Fulda-Mitte',type:'open',len:800},
+  {name:'Dreieck Fulda',type:'open',len:3600},
+  // Unterfranken / Rhön (km 409–490)
+  {name:'Bad Brückenau-Volkers',type:'open',len:1400},
+  {name:'Bad Brückenau/Wildflecken',type:'open',len:2200},
+  {name:'Bad Kissingen/Oberthulba',type:'open',len:1400},
   {name:'Hammelburg',type:'open',len:1800},
-  {name:'Schweinfurt',type:'open',len:1800},
-  {name:'Würzburg',type:'open',len:2000},
-  {name:'Tunnel Gramschatzer Wald',type:'tunnel',len:900},
-  // Mittelfranken
-  {name:'Ansbach',type:'open',len:1800},
-  {name:'Feuchtwangen',type:'open',len:1600},
-  {name:'Dinkelsbühl',type:'open',len:1600},
-  // Schwaben
-  {name:'Nördlingen',type:'open',len:1600},
-  {name:'Memmingen',type:'open',len:1800},
-  {name:'Kempten',type:'open',len:1500},
-  {name:'Tunnel Illertal',type:'tunnel',len:750},
-  // Allgäu
-  {name:'Allgäu',type:'open',len:1600},
-  {name:'Füssen',type:'open',len:1400},
-  {name:'Grenztunnel',type:'tunnel',len:1800},
+  {name:'Wasserlosen',type:'open',len:2000},
+  {name:'Kreuz Schweinfurt/Werneck',type:'open',len:1800},
+  {name:'Gramschatzer Wald',type:'open',len:2000},
+  {name:'Würzburg/Estenfeld',type:'open',len:2400},
+  // Franken / Main (km 490–574)
+  {name:'Kreuz Biebelried',type:'open',len:1200},
+  {name:'Kitzingen',type:'open',len:1200},
+  {name:'Marktbreit',type:'open',len:2200},
+  {name:'Gollhofen',type:'open',len:1800},
+  {name:'Uffenheim/Langensteinach',type:'open',len:1400},
+  {name:'Bad Windsheim',type:'open',len:2600},
+  {name:'Rothenburg ob der Tauber',type:'open',len:1800},
+  {name:'Wörnitz',type:'open',len:1200},
+  {name:'Kreuz Feuchtwangen/Crailsheim',type:'open',len:1000},
+  {name:'Feuchtwangen-West',type:'open',len:2200},
+  {name:'Dinkelsbühl/Fichtenau',type:'open',len:2200},
+  // Östliches Württemberg (km 585–667)
+  {name:'Ellwangen',type:'open',len:2200},
+  {name:'Aalen/Westhausen',type:'open',len:2000},
+  {name:'Aalen/Oberkochen',type:'open',len:2400},
+  {name:'Heidenheim',type:'open',len:2000},
+  {name:'Giengen',type:'open',len:1800},
+  {name:'Niederstotzingen',type:'open',len:2000},
+  {name:'Langenau',type:'open',len:1800},
+  {name:'Kreuz Ulm/Elchingen',type:'open',len:1000},
+  // Donau / Iller (km 667–716)
+  {name:'Nersingen',type:'open',len:1200},
+  {name:'Dreieck Hittistetten',type:'open',len:1000},
+  {name:'Vöhringen',type:'open',len:1200},
+  {name:'Illertissen',type:'open',len:1200},
+  {name:'Altenstadt a.d. Iller',type:'open',len:1200},
+  {name:'Dettingen a.d. Iller',type:'open',len:1200},
+  {name:'Berkheim',type:'open',len:1800},
+  {name:'Kreuz Memmingen',type:'open',len:1000},
+  // Memmingen / Allgäu (km 716–764)
+  {name:'Memmingen-Süd',type:'open',len:1000},
+  {name:'Woringen',type:'open',len:1200},
+  {name:'Bad Grönenbach',type:'open',len:1400},
+  {name:'Dietmannsried',type:'open',len:1800},
+  {name:'Kempten-Leubas',type:'open',len:1200},
+  {name:'Kempten',type:'open',len:1200},
+  {name:'Betzigau',type:'open',len:800},
+  {name:'Dreieck Allgäu',type:'open',len:2200},
+  // Allgäu / Füssen (km 764–803)
+  {name:'Oy-Mittelberg',type:'open',len:1800},
+  {name:'Nesselwang',type:'open',len:3000},
+  {name:'Füssen',type:'open',len:800},
+  {name:'Grenztunnel Füssen',type:'tunnel',len:1000},
 ];
-const DIFF={chill:{base:5,ramp:0.0006,gap:92},normal:{base:6,ramp:0.0009,gap:80},brutal:{base:7.5,ramp:0.0014,gap:62},ghost:{base:6,ramp:0.0009,gap:80}};
+const DIFF={
+  chill: {base:6,ramp:0.0009,gap:150,minNpc:2, maxNpc:5 },
+  normal:{base:6,ramp:0.0009,gap:72, minNpc:5, maxNpc:10},
+  brutal:{base:6,ramp:0.0009,gap:32, minNpc:10,maxNpc:15},
+  ghost: {base:6,ramp:0.0009,gap:72, minNpc:5, maxNpc:10},
+};
 let diff='normal';
 let paused=false;
 let state='menu',score=0,best=0,speed=6,scroll=0,spawnTimer=0;
 let player,enemies=[],signs=[],segIndex=0,segStart=0,tunnelAmt=0;
+let braking=false,brakeDepth=0,brakeFactor=1;
 let pickups=[],particles=[],floats=[],pickupTimer=160,freeUntil=0,flash=0,fc=0;
 const M2S=m=>m/5;                       // 1 Score-Einheit = 5 m  (km = score/200)
 const carW=()=>Math.min(laneW*0.66,52), carH=()=>carW()*1.7;
@@ -557,7 +717,7 @@ buildTextures(); player=newPlayer(); resize();
 window.addEventListener('resize',()=>{resize();buildTextures();});
 player.x=player.targetX=lanes[1]; player.y=H-carH()*1.7;
 
-function resetRun(){score=0;speed=DIFF[diff].base;scroll=0;spawnTimer=0;enemies=[];signs=[];segIndex=0;segStart=0;tunnelAmt=0;
+function resetRun(){score=0;speed=DIFF[diff].base;scroll=0;spawnTimer=0;enemies=[];signs=[];segIndex=0;segStart=0;tunnelAmt=0;braking=false;brakeDepth=0;brakeFactor=1;
   pickups=[];particles=[];floats=[];pickupTimer=160;freeUntil=0;flash=0;
   player=newPlayer();player.x=player.targetX=lanes[1];player.y=H-carH()*1.7;document.getElementById('placeName').textContent=ROUTE[0].name;}
 
@@ -567,18 +727,51 @@ cv.addEventListener('pointerdown',e=>{const x=e.clientX-cv.getBoundingClientRect
 window.addEventListener('keydown',e=>{
   if(e.key==='Escape'||e.key==='p'||e.key==='P'){if(paused)resumeGame();else pauseGame();}
   if(e.key==='ArrowLeft')move(-1);if(e.key==='ArrowRight')move(1);
+  if((e.key==='ArrowDown'||e.key==='b'||e.key==='B')&&state==='play'){braking=true;brakeDepth=0.7;e.preventDefault();}
 });
+window.addEventListener('keyup',e=>{
+  if(e.key==='ArrowDown'||e.key==='b'||e.key==='B'){braking=false;brakeDepth=0;}
+});
+(()=>{const bb=document.getElementById('brakeBtn');
+  function updBD(e){const r=bb.getBoundingClientRect();brakeDepth=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height));bb.style.setProperty('--bd',brakeDepth.toFixed(3));}
+  bb.addEventListener('pointerdown',e=>{if(state!=='play')return;braking=true;bb.classList.add('active');bb.setPointerCapture(e.pointerId);e.stopPropagation();updBD(e);});
+  bb.addEventListener('pointermove',e=>{if(braking)updBD(e);});
+  bb.addEventListener('pointerup',()=>{braking=false;brakeDepth=0;bb.classList.remove('active');bb.style.setProperty('--bd','0');});
+  bb.addEventListener('pointercancel',()=>{braking=false;brakeDepth=0;bb.classList.remove('active');bb.style.setProperty('--bd','0');});
+})();
 
 /* ============ spawn ============ */
 function spawn(ambient){
   const truck=Math.random()<0.26;
-  let lane=truck?(LANES-1-(Math.random()<0.4?1:0)):Math.floor(Math.random()*LANES);
+  // Spurwahl – Deutsches Rechtsfahrgebot (nicht garantiert, ~10% Abweichung)
+  let lane;
+  if(truck){
+    lane=Math.random()<0.82?LANES-1:LANES-2;   // LKW: 82 % ganz rechts, 18 % zweite von rechts
+  }else{
+    const r=Math.random();
+    if(r<0.38)     lane=LANES-1;   // 38 % ganz rechts (langsam)
+    else if(r<0.68)lane=LANES-2;   // 30 % zweite von rechts
+    else if(r<0.88)lane=1;         // 20 % zweite von links
+    else            lane=0;        // 12 % Überholspur (links, schnell)
+  }
   if(ambient&&lane===player.lane)lane=(lane+1)%LANES;
   const kind=truck?'truck':KINDS[Math.random()*KINDS.length|0];
   const col=COLS[Math.random()*COLS.length|0], cab=Math.random()<0.5?'#b23b3b':'#2c3e50';
-  enemies.push({lane,x:lanes[lane],y:-carH()*(truck?2.5:1.2),truck,kind,col,cab,key:truck?`t|${col}|${cab}`:`${kind}|${col}`});
+  // Spurabhängige Geschwindigkeit (linke Spur = schneller, rechte = langsamer)
+  // speedMul < 1 = langsamer als Spieler → Spieler überholt
+  const laneSpd=[[0.74,0.22],[0.57,0.28],[0.44,0.24],[0.30,0.24]];
+  const rw=(l)=>{
+    const ls=laneSpd[Math.min(l,LANES-1)];
+    const speedMul=truck
+      ?0.30+Math.random()*0.20                    // LKW immer langsam (0.30–0.50)
+      :Math.random()<0.10                          // 10 % Realvarianz (falsche Spur)
+        ?0.42+Math.random()*0.54
+        :ls[0]+Math.random()*ls[1];               // spurgerecht
+    return {wobPhase:Math.random()*6.283,wobAmp:2+Math.random()*3,wobFreq:0.016+Math.random()*0.018,bobAmp:0.4+Math.random()*0.8,bobFreq:0.038+Math.random()*0.032,speedMul};
+  };
+  enemies.push({lane,x:lanes[lane],baseX:lanes[lane],y:-carH()*(truck?2.5:1.2),truck,kind,col,cab,key:truck?`t|${col}|${cab}`:`${kind}|${col}`,...rw(lane)});
   if(!ambient&&!truck&&Math.random()<0.4){let l2=(lane+2)%LANES;const k=KINDS[Math.random()*KINDS.length|0],c2=COLS[COLS.length*Math.random()|0];
-    enemies.push({lane:l2,x:lanes[l2],y:-carH()*(1.4+Math.random()*0.6),truck:false,kind:k,col:c2,key:`${k}|${c2}`});}
+    enemies.push({lane:l2,x:lanes[l2],baseX:lanes[l2],y:-carH()*(1.4+Math.random()*0.6),truck:false,kind:k,col:c2,key:`${k}|${c2}`,...rw(l2)});}
 }
 
 /* ============ Power-ups ============ */
@@ -627,7 +820,9 @@ function blitVehicle(e){
   // Schlagschatten (Licht von oben-links)
   ctx.save();ctx.globalAlpha=0.30;ctx.fillStyle='#000';rr(ctx,x-w/2+4,y-h/2+5,w,h,w*0.24);ctx.fill();ctx.restore();
   const s=sprite(e.key,e.kind,e.col,e.cab);
-  ctx.drawImage(s,x-w/2,y-h/2,w,h);
+  const rot=Math.cos(fc*(e.wobFreq||0.02)+(e.wobPhase||0))*(e.wobFreq||0.02)*(e.wobAmp||0)*0.10;
+  const bob=Math.sin(fc*(e.bobFreq||0.04)+(e.wobPhase||0)*0.7)*(e.bobAmp||0);
+  ctx.save();ctx.translate(x,y+bob);ctx.rotate(rot);ctx.drawImage(s,-w/2,-h/2,w,h);ctx.restore();
   // Rücklicht-Glow im Tunnel
   if(tunnelAmt>0.2){ctx.save();ctx.globalCompositeOperation='lighter';ctx.fillStyle=`rgba(255,40,30,${0.5*tunnelAmt})`;
     ctx.beginPath();ctx.ellipse(x,y+h*0.42,w*0.5,h*0.12,0,0,7);ctx.fill();ctx.restore();}
@@ -651,6 +846,7 @@ function drawPlayerCar(){
       ? buildSkinSprite({kind:carDef(sel).kind,color:'#7a2233'},Math.round(carW()*SS),Math.round(carH()*SS))
       : buildSkinSprite(carDef(sel),Math.round(carW()*SS),Math.round(carH()*SS)));
   ctx.save();ctx.translate(x,y);ctx.rotate(player.wob);ctx.scale(sc,sc);ctx.drawImage(s,-w/2,-h/2,w,h);ctx.restore();
+  if(braking){ctx.save();ctx.globalCompositeOperation='lighter';[-0.26,0.26].forEach(o=>{const bx=x+w*o,by=y+h*0.37;const g=ctx.createRadialGradient(bx,by,1,bx,by,w*0.52);g.addColorStop(0,'rgba(255,28,8,0.95)');g.addColorStop(1,'rgba(255,28,8,0)');ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(bx,by,w*0.52,h*0.13,0,0,7);ctx.fill();});ctx.restore();}
   if(diff==='ghost')ctx.restore();
 }
 function drawGuardrail(side){
@@ -798,8 +994,8 @@ function frame(){
     for(const e of enemies)blitVehicle(e);drawPlayerCar();drawParticles();drawFloats();drawFreeBar();postFX();
     return;
   }
-  const cfg=DIFF[diff];
-  speed=(state==='play')?cfg.base+score*cfg.ramp:4.2;
+  const cfg=DIFF[diff];const carCfg=carDef(sel);
+  speed=(state==='play')?Math.min(carCfg.maxKmh/18,cfg.base+score*cfg.ramp*(carCfg.rampMul||1)):4.2;
   scroll+=speed; fc++;
   if(state==='play'){
     const seg=ROUTE[segIndex];
@@ -807,7 +1003,10 @@ function frame(){
     tunnelAmt+=((ROUTE[segIndex].type==='tunnel'?1:0)-tunnelAmt)*0.04;
     if(player.hit>0)player.hit--;
     // Sprung (Rampe): Auto fliegt hoch, Welt rauscht in Echtzeit schneller drunter durch
-    let eff=speed;
+    const bkTarget=(braking&&player.air<=0)?Math.max(0.04,1-brakeDepth*0.96):1;
+    if(brakeFactor>bkTarget)brakeFactor=Math.max(bkTarget,brakeFactor-Math.max(0.0015,brakeDepth*0.004));
+    else brakeFactor=Math.min(1,brakeFactor+0.005);
+    let eff=speed*brakeFactor;
     if(player.air>0){ eff=speed+player.jumpBoost/0.18; player.air+=1/player.jumpDur;
       if(player.air>=1){player.air=0;dust(player.x,player.y+carH()*0.4);AU.land();} }
     scroll+=eff-speed;
@@ -817,15 +1016,18 @@ function frame(){
       player.wob=Math.sin(fc*0.6)*0.18;
       if(player.ctrl===0){player.lane=Math.max(0,Math.min(LANES-1,Math.round((player.x-roadX-laneW/2)/laneW)));player.targetX=lanes[player.lane];player.wob=0;}
     } else { player.wob*=0.8; }
-    player.x+=(player.targetX-player.x)*0.25;
+    player.x+=(player.targetX-player.x)*(carCfg.handling||0.22);
     // Verkehr (nicht während freier Fahrt)
-    const gap=Math.max(30,cfg.gap-score*0.012);
-    if(score>=freeUntil && ++spawnTimer>=gap){spawnTimer=0;spawn(false);}
+    const gap=cfg.gap;
+    if(brakeFactor<0.35) enemies=enemies.filter(e=>e.y>-H);
+    if(score>=freeUntil && (spawnTimer+=brakeFactor)>=gap && enemies.length<cfg.maxNpc){spawnTimer=0;spawn(false);}
     if(--pickupTimer<=0){pickupTimer=180+(Math.random()*160|0);spawnPickup();}
     const h=carH(), invuln=player.air>0||score<freeUntil;
-    for(const e of enemies){e.y+=eff;const eh=h*(e.truck?2.35:1);
+    const npcEff=player.air>0?eff:speed;  // NPCs ignorieren brakeFactor, reagieren aber auf Sprung
+    for(const e of enemies){e.y+=npcEff*(e.speedMul||1);if(e.baseX!==undefined)e.x=e.baseX+Math.sin(fc*(e.wobFreq||0.02)+(e.wobPhase||0))*(e.wobAmp||0);const eh=h*(e.truck?2.35:1);
       if(diff!=='ghost'&&!invuln&&Math.abs(e.x-player.x)<carW()*0.6&&Math.abs(e.y-player.y)<(eh+h)/2*0.82){crash();return;}}
     enemies=enemies.filter(e=>e.y<H+h*3);
+    for(let i=0;i<enemies.length;i++){for(let j=i+1;j<enemies.length;j++){if(enemies[i].lane!==enemies[j].lane)continue;const hi=h*(enemies[i].truck?2.35:1),hj=h*(enemies[j].truck?2.35:1);const minD=(hi+hj)*0.5+12;const dy=enemies[j].y-enemies[i].y;if(Math.abs(dy)<minD){if(dy>=0)enemies[j].y=enemies[i].y+minD;else enemies[i].y=enemies[j].y+minD;}}}
     for(const p of pickups){p.y+=eff;
       if(!p.done&&player.air<=0&&Math.abs(p.x-player.x)<carW()*0.62&&Math.abs(p.y-player.y)<h*0.7){p.done=true;trigger(p.type);}}
     pickups=pickups.filter(p=>p.y<H+h*2&&!p.done);
@@ -840,7 +1042,8 @@ function frame(){
     document.getElementById('speedo').textContent=Math.round(eff*18);
   }else{
     tunnelAmt+=(-tunnelAmt)*0.04;if(++spawnTimer>=70){spawnTimer=0;spawn(true);}
-    for(const e of enemies)e.y+=speed;enemies=enemies.filter(e=>e.y<H+carH()*3);
+    for(const e of enemies){e.y+=speed*(e.speedMul||1);if(e.baseX!==undefined)e.x=e.baseX+Math.sin(fc*(e.wobFreq||0.02)+(e.wobPhase||0))*(e.wobAmp||0);}enemies=enemies.filter(e=>e.y<H+carH()*3);
+    const ch=carH();for(let i=0;i<enemies.length;i++){for(let j=i+1;j<enemies.length;j++){if(enemies[i].lane!==enemies[j].lane)continue;const hi=ch*(enemies[i].truck?2.35:1),hj=ch*(enemies[j].truck?2.35:1);const minD=(hi+hj)*0.5+12;const dy=enemies[j].y-enemies[i].y;if(Math.abs(dy)<minD){if(dy>=0)enemies[j].y=enemies[i].y+minD;else enemies[i].y=enemies[j].y+minD;}}}
   }
   ctx.clearRect(0,0,W,H);
   drawWorld();
@@ -859,19 +1062,22 @@ function crash(){paused=false;state='over';best=Math.max(best,score);AU.engineSt
   document.getElementById('finalScore').textContent=kmTxt(score);document.getElementById('finalBest').textContent=kmTxt(best);
   document.getElementById('earned').textContent='+'+earned.toLocaleString('de-DE')+' Coins';
   const km=score/200;let v='Auf dem Standstreifen gelandet.';
-  if(km>6)v='Bis Eidelstedt. Solide.';
-  if(km>14)v='Elbtunnel in Sicht. Stark gefahren.';
-  if(km>22)v='Durch ganz HH. Golf R approved.';
-  if(km>52)v='Hamburg hinter dir. Weiter südwärts!';
-  if(km>97)v='Hannover im Rückspiegel. Respekt.';
-  if(km>150)v='Hessen durchquert. Fulda war gestern.';
-  if(km>178)v='Würzburg geschafft – Bayern ruft!';
-  if(km>232)v='Allgäu! Fast am Grenztunnel.';
-  if(km>250)v='Grenztunnel erreicht – absolut legendär!';
+  if(km>9)v='Othmarschen. Elbtunnel voraus!';
+  if(km>13)v='Elbtunnel geschafft. Klasse Fahrt!';
+  if(km>18)v='Hamburg-Heimfeld! Die Stadt liegt hinter dir.';
+  if(km>75)v='Soltau! Lüneburger Heide im Rückspiegel.';
+  if(km>133)v='Hannover – die Hälfte liegt vor dir!';
+  if(km>263)v='Göttingen passiert. Hessen liegt vor dir.';
+  if(km>399)v='Fulda! Der Süden ruft.';
+  if(km>490)v='Würzburg – Bayern hat dich!';
+  if(km>667)v='Kreuz Ulm! Schwaben grüßt dich.';
+  if(km>754)v='Kempten! Das Allgäu öffnet sich.';
+  if(km>799)v='Füssen – fast da! Vollgas zum Grenztunnel!';
+  if(km>803)v='Grenztunnel Füssen erreicht – absolut legendär!';
   document.getElementById('verdict').textContent=v;
-  document.getElementById('hud').classList.remove('on');document.getElementById('place').classList.remove('on');document.getElementById('speedoBox').classList.remove('on');document.getElementById('over').classList.remove('hidden');}
-function startGame(){AU.resume();AU.click();resetRun();state='play';paused=false;AU.engineStart();document.getElementById('menu').classList.add('hidden');document.getElementById('over').classList.add('hidden');document.getElementById('pause').classList.add('hidden');document.getElementById('hud').classList.add('on');document.getElementById('place').classList.add('on');document.getElementById('speedoBox').classList.add('on');document.getElementById('pauseBtn').classList.add('on');document.getElementById('ghostHud').classList.toggle('on',diff==='ghost');}
-function toMenu(){paused=false;AU.engineStop();AU.click();state='menu';enemies=[];signs=[];pickups=[];particles=[];floats=[];tunnelAmt=0;player=newPlayer();player.x=player.targetX=lanes[1];player.y=H-carH()*1.7;refreshMenuStats();document.getElementById('speedoBox').classList.remove('on');document.getElementById('over').classList.add('hidden');document.getElementById('pause').classList.add('hidden');document.getElementById('pauseBtn').classList.remove('on');document.getElementById('ghostHud').classList.remove('on');document.getElementById('menu').classList.remove('hidden');}
+  document.getElementById('hud').classList.remove('on');document.getElementById('place').classList.remove('on');document.getElementById('speedoBox').classList.remove('on');document.getElementById('brakeBtn').classList.remove('on');braking=false;brakeDepth=0;brakeFactor=1;document.getElementById('over').classList.remove('hidden');}
+function startGame(){AU.resume();AU.click();resetRun();state='play';paused=false;AU.engineStart();document.getElementById('menu').classList.add('hidden');document.getElementById('over').classList.add('hidden');document.getElementById('pause').classList.add('hidden');document.getElementById('hud').classList.add('on');document.getElementById('place').classList.add('on');document.getElementById('speedoBox').classList.add('on');document.getElementById('pauseBtn').classList.add('on');document.getElementById('ghostHud').classList.toggle('on',diff==='ghost');document.getElementById('brakeBtn').classList.add('on');}
+function toMenu(){paused=false;AU.engineStop();AU.click();state='menu';enemies=[];signs=[];pickups=[];particles=[];floats=[];tunnelAmt=0;player=newPlayer();player.x=player.targetX=lanes[1];player.y=H-carH()*1.7;goToPage(0,false);refreshMenuStats();document.getElementById('speedoBox').classList.remove('on');document.getElementById('over').classList.add('hidden');document.getElementById('pause').classList.add('hidden');document.getElementById('pauseBtn').classList.remove('on');document.getElementById('ghostHud').classList.remove('on');document.getElementById('brakeBtn').classList.remove('on');braking=false;brakeDepth=0;brakeFactor=1;document.getElementById('menu').classList.remove('hidden');}
 function openShop(){AU.resume();AU.click();renderShop();document.getElementById('menu').classList.add('hidden');document.getElementById('over').classList.add('hidden');document.getElementById('shop').classList.remove('hidden');}
 function closeShop(){AU.click();document.getElementById('shop').classList.add('hidden');refreshMenuStats();document.getElementById('menu').classList.remove('hidden');}
 function renderShop(){
@@ -928,7 +1134,113 @@ const SVG_OFF='<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path
 function renderMute(){muteBtn.innerHTML=AU.isMuted()?SVG_OFF:SVG_ON;}
 muteBtn.onclick=()=>{AU.resume();AU.setMuted(!AU.isMuted());renderMute();};
 renderMute();
-document.getElementById('shopBtn').onclick=openShop;
+function renderGarage(){
+  document.getElementById('grgCoins').textContent=Math.round(coins).toLocaleString('de-DE');
+  const grid=document.getElementById('garageGrid');grid.innerHTML='';
+  for(const c of CARS){
+    const isOwned=owned[c.id],isActive=sel===c.id;
+    const card=document.createElement('div');
+    card.className='acard'+(isActive?' active':'')+(isOwned?'':' locked');
+    const prev=document.createElement('div');prev.className='aprev';
+    prev.appendChild(buildSkinSprite(c,54,92));card.appendChild(prev);
+    const info=document.createElement('div');info.className='ainfo';
+    const nm=document.createElement('div');nm.className='aname';nm.textContent=c.name;info.appendChild(nm);
+    const ds=document.createElement('div');ds.className='adesc';ds.textContent=c.desc||'';info.appendChild(ds);
+    if(isOwned){
+      const specs=document.createElement('div');specs.className='specs';
+      [[c.displacement.toLocaleString('de-DE')+' cm³','Hubraum'],[c.ps+' PS','Leistung'],[c.cylinders+'-Zyl.','Motor']].forEach(([v,l])=>{
+        const sp=document.createElement('div');sp.className='spec';
+        sp.innerHTML=`<div class="sv">${v}</div><div class="sl">${l}</div>`;specs.appendChild(sp);
+      });info.appendChild(specs);
+      const bars=document.createElement('div');bars.className='sbars';
+      [[c.maxKmh/250,'Tempo'],[c.rampMul/1.2,'Beschl.'],[c.handling/0.35,'Handling']].forEach(([ratio,lbl])=>{
+        const row=document.createElement('div');row.className='sbar-row';
+        row.innerHTML=`<div class="sbar-lbl">${lbl}</div><div class="sbar"><div class="sbar-fill" style="width:${Math.round(Math.min(1,ratio)*100)}%"></div></div>`;
+        bars.appendChild(row);
+      });info.appendChild(bars);
+    }else{
+      const priceEl=document.createElement('div');
+      priceEl.style.cssText='font-size:19px;font-weight:900;color:#ffd23f;margin:8px 0 2px;';
+      priceEl.textContent=c.price.toLocaleString('de-DE')+' Coins';info.appendChild(priceEl);
+      const hint=document.createElement('div');hint.style.cssText='font-size:11px;color:#7a8878;margin-bottom:4px;';
+      hint.textContent=c.maxKmh+' km/h · '+c.ps+' PS';info.appendChild(hint);
+    }
+    const btn=document.createElement('button');btn.className='cbtn';
+    if(isActive){btn.textContent='Aktiv';btn.classList.add('on');btn.disabled=true;}
+    else if(isOwned){btn.textContent='Auswählen';btn.onclick=()=>{sel=c.id;delete spriteCache['P|'+sel];Store.save();AU.click();renderGarage();};}
+    else{
+      btn.textContent='Kaufen · '+c.price.toLocaleString('de-DE');btn.classList.add('buy');
+      btn.onclick=()=>{
+        if(coins>=c.price){coins-=c.price;owned[c.id]=true;sel=c.id;Store.save();AU.free();renderGarage();}
+        else{AU.pothole();card.classList.add('shake');setTimeout(()=>card.classList.remove('shake'),300);}
+      };
+    }
+    info.appendChild(btn);card.appendChild(info);grid.appendChild(card);
+  }
+}
+let menuPage=0;
+function goToPage(n,animate){
+  menuPage=n;
+  const pw=document.getElementById('pagesWrap');
+  if(animate===false)pw.style.transition='none';
+  pw.style.transform='translateX('+(-n*50)+'%)';
+  if(animate===false)requestAnimationFrame(()=>{pw.style.transition='';});
+  document.querySelectorAll('.pdot').forEach((d,i)=>d.classList.toggle('active',i===n));
+  if(n===1)renderGarage();
+}
+(()=>{
+  const pw=document.getElementById('pagesWrap');
+  let sx=null,sy=null,blocked=false;
+  pw.addEventListener('pointerdown',e=>{sx=e.clientX;sy=e.clientY;blocked=false;},{passive:true});
+  pw.addEventListener('pointermove',e=>{
+    if(sx===null||blocked)return;
+    const dx=Math.abs(e.clientX-sx),dy=Math.abs(e.clientY-sy);
+    if(dy>dx+8){blocked=true;sx=null;}
+  },{passive:true});
+  pw.addEventListener('pointerup',e=>{
+    if(sx===null)return;
+    const dx=e.clientX-sx;sx=null;
+    if(Math.abs(dx)<40)return;
+    if(dx<0&&menuPage===0)goToPage(1);
+    else if(dx>0&&menuPage===1)goToPage(0);
+  });
+  pw.addEventListener('pointercancel',()=>{sx=null;});
+})();
+function renderAutos(){
+  const grid=document.getElementById('autosGrid');grid.innerHTML='';
+  for(const c of CARS){
+    if(!owned[c.id])continue;
+    const card=document.createElement('div');card.className='acard'+(sel===c.id?' active':'');
+    // Preview
+    const prev=document.createElement('div');prev.className='aprev';
+    const cv2=buildSkinSprite(c,54,92);prev.appendChild(cv2);card.appendChild(prev);
+    // Info
+    const info=document.createElement('div');info.className='ainfo';
+    const nm=document.createElement('div');nm.className='aname';nm.textContent=c.name;info.appendChild(nm);
+    const ds=document.createElement('div');ds.className='adesc';ds.textContent=c.desc||'';info.appendChild(ds);
+    // Specs grid
+    const specs=document.createElement('div');specs.className='specs';
+    [[c.displacement.toLocaleString('de-DE')+' cm³','Hubraum'],[c.ps+' PS','Leistung'],[c.cylinders+'-Zyl.','Motor']].forEach(([v,l])=>{
+      const sp=document.createElement('div');sp.className='spec';
+      sp.innerHTML=`<div class="sv">${v}</div><div class="sl">${l}</div>`;specs.appendChild(sp);
+    });info.appendChild(specs);
+    // Stat bars
+    const bars=document.createElement('div');bars.className='sbars';
+    [[c.maxKmh/250,'Tempo'],[c.rampMul/1.2,'Beschl.'],[c.handling/0.35,'Handling']].forEach(([ratio,lbl])=>{
+      const row=document.createElement('div');row.className='sbar-row';
+      row.innerHTML=`<div class="sbar-lbl">${lbl}</div><div class="sbar"><div class="sbar-fill" style="width:${Math.round(Math.min(1,ratio)*100)}%"></div></div>`;
+      bars.appendChild(row);
+    });info.appendChild(bars);
+    // Button
+    const btn=document.createElement('button');btn.className='cbtn';
+    if(sel===c.id){btn.textContent='Aktiv';btn.classList.add('on');btn.disabled=true;}
+    else{btn.textContent='Auswählen';btn.onclick=()=>{sel=c.id;delete spriteCache['P|'+sel];Store.save();AU.click();renderAutos();};}
+    info.appendChild(btn);card.appendChild(info);grid.appendChild(card);
+  }
+}
+function openAutos(){AU.resume();AU.click();renderAutos();document.getElementById('menu').classList.add('hidden');document.getElementById('autos').classList.remove('hidden');}
+function closeAutos(){AU.click();document.getElementById('autos').classList.add('hidden');refreshMenuStats();document.getElementById('menu').classList.remove('hidden');}
+document.getElementById('autosBack').onclick=closeAutos;
 document.getElementById('shopBack').onclick=closeShop;
 Store.load();
 requestAnimationFrame(frame);
