@@ -349,41 +349,87 @@ function buildVehicleSprite(kind,color,cab){
   return c;
 }
 function drawCarBody(g,w,h,m,kind,color,roof,stripe){
-  const bx=m,by=m,bw=w-2*m,bh=h-2*m,rad=bw*0.26;
-  // Karosserie: horizontaler Verlauf (Wölbung)
+  const bx=m,by=m,bw=w-2*m,bh=h-2*m,rad=bw*0.24;
+  // --- Räder (zuerst, unter der Karosserie) ---
+  const ww=bw*0.20,wh=bh*0.118;
+  const axY=[by+bh*0.09,by+bh*0.76];
+  const axX=[bx-ww*0.42,bx+bw-ww*0.58];
+  for(const ay of axY){for(const ax of axX){
+    g.fillStyle='rgba(0,0,0,0.32)';rr(g,ax+1.5,ay+2,ww,wh,ww*0.38);g.fill();
+    g.fillStyle='#18191c';rr(g,ax,ay,ww,wh,ww*0.38);g.fill();
+    const rg2=g.createLinearGradient(ax,ay,ax+ww,ay+wh);rg2.addColorStop(0,'#444850');rg2.addColorStop(0.5,'#6a6e78');rg2.addColorStop(1,'#38393e');
+    rr(g,ax+ww*0.18,ay+wh*0.18,ww*0.64,wh*0.64,ww*0.26);g.fillStyle=rg2;g.fill();
+    g.fillStyle='rgba(255,255,255,0.18)';g.beginPath();g.arc(ax+ww*0.36,ay+wh*0.28,ww*0.11,0,7);g.fill();
+  }}
+  // --- Karosserie ---
   const lg=g.createLinearGradient(bx,0,bx+bw,0);
-  lg.addColorStop(0,shade(color,-0.16));lg.addColorStop(.18,shade(color,.02));
-  lg.addColorStop(.5,shade(color,.14));lg.addColorStop(.82,shade(color,.02));lg.addColorStop(1,shade(color,-0.16));
+  lg.addColorStop(0,shade(color,-0.22));lg.addColorStop(.15,shade(color,-.02));
+  lg.addColorStop(.5,shade(color,.20));lg.addColorStop(.85,shade(color,-.02));lg.addColorStop(1,shade(color,-0.22));
   rr(g,bx,by,bw,bh,rad);g.fillStyle=lg;g.fill();
-  // Lack-Sheen vertikal
   const vg=g.createLinearGradient(0,by,0,by+bh);
-  vg.addColorStop(0,'rgba(255,255,255,.18)');vg.addColorStop(.25,'rgba(255,255,255,0)');vg.addColorStop(.7,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.18)');
+  vg.addColorStop(0,'rgba(255,255,255,.24)');vg.addColorStop(.22,'rgba(255,255,255,.04)');
+  vg.addColorStop(.72,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.22)');
   rr(g,bx,by,bw,bh,rad);g.fillStyle=vg;g.fill();
-  // Rennstreifen
   if(stripe){g.save();rr(g,bx,by,bw,bh,rad);g.clip();g.fillStyle=stripe;g.fillRect(bx+bw*0.42,by,bw*0.07,bh);g.fillRect(bx+bw*0.51,by,bw*0.07,bh);g.restore();}
-  // Proportionen je Typ
-  let roofT=0.30,roofB=0.74; if(kind==='suv'){roofT=0.24;roofB=0.82;} if(kind==='van'){roofT=0.18;roofB=0.86;} if(kind==='sport'){roofT=0.36;roofB=0.68;} if(kind==='hatch'){roofT=0.30;roofB=0.80;}
-  const gx0=bx+bw*0.17,gx1=bx+bw*0.83,gw=gx1-gx0;
-  // Frontscheibe
-  glass(g,gx0,by+bh*0.18,gw,bh*(roofT-0.18));
+  // --- Kabine ---
+  let roofT=0.30,roofB=0.74;
+  if(kind==='suv'){roofT=0.24;roofB=0.82;}else if(kind==='van'){roofT=0.18;roofB=0.87;}else if(kind==='sport'){roofT=0.37;roofB=0.67;}else if(kind==='hatch'){roofT=0.30;roofB=0.80;}
+  const gx0=bx+bw*0.16,gx1=bx+bw*0.84,gw=gx1-gx0;
+  // Motorhaublinie
+  g.strokeStyle='rgba(0,0,0,0.20)';g.lineWidth=0.8;
+  g.beginPath();g.moveTo(gx0+gw*0.06,by+bh*0.175);g.lineTo(gx1-gw*0.06,by+bh*0.175);g.stroke();
+  // Frontscheibe (Trapez)
+  g.fillStyle='rgba(28,52,90,.78)';
+  g.beginPath();g.moveTo(gx0+gw*0.10,by+bh*0.185);g.lineTo(gx1-gw*0.10,by+bh*0.185);
+  g.lineTo(gx1,by+bh*roofT);g.lineTo(gx0,by+bh*roofT);g.closePath();g.fill();
+  g.fillStyle='rgba(255,255,255,0.13)';
+  g.beginPath();g.moveTo(gx0+gw*0.11,by+bh*0.19);g.lineTo(gx0+gw*0.46,by+bh*0.19);
+  g.lineTo(gx0+gw*0.38,by+bh*roofT);g.lineTo(gx0+gw*0.04,by+bh*roofT);g.closePath();g.fill();
   // Dach
-  rr(g,gx0,by+bh*roofT,gw,bh*(roofB-roofT),4);g.fillStyle=roof||shade(color,-0.05);g.fill();
-  const rg=g.createLinearGradient(gx0,0,gx1,0);rg.addColorStop(0,'rgba(255,255,255,.12)');rg.addColorStop(.5,'rgba(255,255,255,0)');rg.addColorStop(1,'rgba(0,0,0,.1)');
-  rr(g,gx0,by+bh*roofT,gw,bh*(roofB-roofT),4);g.fillStyle=rg;g.fill();
-  // Heckscheibe
-  glass(g,gx0,by+bh*roofB,gw,bh*0.13);
-  // Seitenscheiben
-  g.fillStyle='rgba(35,45,60,.55)';g.fillRect(gx0-2,by+bh*roofT,3,bh*(roofB-roofT));g.fillRect(gx1-1,by+bh*roofT,3,bh*(roofB-roofT));
+  rr(g,gx0,by+bh*roofT,gw,bh*(roofB-roofT),4);g.fillStyle=roof||shade(color,-0.06);g.fill();
+  const rdg=g.createLinearGradient(gx0,0,gx1,0);
+  rdg.addColorStop(0,'rgba(0,0,0,.16)');rdg.addColorStop(.28,'rgba(255,255,255,.16)');rdg.addColorStop(.6,'rgba(255,255,255,0)');rdg.addColorStop(1,'rgba(0,0,0,.14)');
+  rr(g,gx0,by+bh*roofT,gw,bh*(roofB-roofT),4);g.fillStyle=rdg;g.fill();
+  // A-Säule
+  g.strokeStyle='rgba(0,0,0,0.28)';g.lineWidth=1;
+  g.beginPath();g.moveTo(gx0,by+bh*roofT);g.lineTo(gx0+gw*0.09,by+bh*0.185);g.stroke();
+  g.beginPath();g.moveTo(gx1,by+bh*roofT);g.lineTo(gx1-gw*0.09,by+bh*0.185);g.stroke();
+  // Heckscheibe (Trapez)
+  g.fillStyle='rgba(28,52,90,.70)';
+  g.beginPath();g.moveTo(gx0,by+bh*roofB);g.lineTo(gx1,by+bh*roofB);
+  g.lineTo(gx1-gw*0.10,by+bh*(roofB+0.115));g.lineTo(gx0+gw*0.10,by+bh*(roofB+0.115));g.closePath();g.fill();
+  // Seitenscheiben (dünne Streifen = B-/C-Säule)
+  g.fillStyle='rgba(25,45,80,.52)';
+  g.fillRect(gx0-1.5,by+bh*roofT+1,2.5,bh*(roofB-roofT)-2);
+  g.fillRect(gx1-1,by+bh*roofT+1,2.5,bh*(roofB-roofT)-2);
+  // Türlinie
+  if(kind!=='van'){g.strokeStyle='rgba(0,0,0,0.16)';g.lineWidth=0.7;
+    const mid=(by+bh*roofT+by+bh*roofB)*0.5;
+    g.beginPath();g.moveTo(gx0,mid);g.lineTo(gx1,mid);g.stroke();}
   // Spiegel
-  g.fillStyle=shade(color,-0.1);g.fillRect(bx-2,by+bh*0.30,4,bh*0.05);g.fillRect(bx+bw-2,by+bh*0.30,4,bh*0.05);
-  // Scheinwerfer
-  g.fillStyle='rgba(255,250,225,.95)';rr(g,bx+bw*0.08,by+2,bw*0.2,bh*0.05,2);g.fill();rr(g,bx+bw*0.72,by+2,bw*0.2,bh*0.05,2);g.fill();
-  // Rücklichter
-  g.fillStyle='rgba(210,40,30,.95)';rr(g,bx+bw*0.08,by+bh-bh*0.05-2,bw*0.22,bh*0.045,2);g.fill();rr(g,bx+bw*0.70,by+bh-bh*0.05-2,bw*0.22,bh*0.045,2);g.fill();
-  // Specular-Streak
-  g.save();g.globalCompositeOperation='lighter';g.strokeStyle='rgba(255,255,255,.22)';g.lineWidth=bw*0.06;g.beginPath();g.moveTo(bx+bw*0.32,by);g.lineTo(bx+bw*0.18,by+bh);g.stroke();g.restore();
-  // Kante
-  rr(g,bx,by,bw,bh,rad);g.strokeStyle='rgba(0,0,0,.25)';g.lineWidth=1;g.stroke();
+  g.fillStyle=shade(color,-0.16);
+  rr(g,bx-3.5,by+bh*0.27,5,bh*0.054,1.5);g.fill();
+  rr(g,bx+bw-1.5,by+bh*0.27,5,bh*0.054,1.5);g.fill();
+  // --- LED-Scheinwerfer ---
+  const hlg=g.createLinearGradient(bx,0,bx+bw,0);
+  hlg.addColorStop(0,'rgba(210,230,255,0)');hlg.addColorStop(.07,'rgba(235,245,255,.96)');
+  hlg.addColorStop(.36,'rgba(235,245,255,.96)');hlg.addColorStop(.42,'rgba(210,230,255,0)');
+  hlg.addColorStop(.58,'rgba(210,230,255,0)');hlg.addColorStop(.64,'rgba(235,245,255,.96)');
+  hlg.addColorStop(.93,'rgba(235,245,255,.96)');hlg.addColorStop(1,'rgba(210,230,255,0)');
+  g.fillStyle=hlg;rr(g,bx+bw*0.06,by+1.5,bw*0.88,bh*0.038,2);g.fill();
+  g.fillStyle='rgba(180,215,255,0.22)';g.fillRect(bx+bw*0.06,by,bw*0.30,3);g.fillRect(bx+bw*0.64,by,bw*0.30,3);
+  // --- LED-Rücklichter ---
+  const tlg=g.createLinearGradient(bx,0,bx+bw,0);
+  tlg.addColorStop(0,'rgba(180,12,12,0)');tlg.addColorStop(.06,'rgba(225,22,22,.96)');
+  tlg.addColorStop(.42,'rgba(225,22,22,.96)');tlg.addColorStop(.50,'rgba(100,0,0,.40)');
+  tlg.addColorStop(.58,'rgba(225,22,22,.96)');tlg.addColorStop(.94,'rgba(225,22,22,.96)');
+  tlg.addColorStop(1,'rgba(180,12,12,0)');
+  g.fillStyle=tlg;rr(g,bx+bw*0.06,by+bh-bh*0.052-1.5,bw*0.88,bh*0.046,2);g.fill();
+  g.fillStyle='rgba(255,30,30,0.18)';g.fillRect(bx+bw*0.06,by+bh-3.5,bw*0.88,3.5);
+  // --- Specular + Kante ---
+  g.save();g.globalCompositeOperation='lighter';g.strokeStyle='rgba(255,255,255,.18)';g.lineWidth=bw*0.055;
+  g.beginPath();g.moveTo(bx+bw*0.31,by);g.lineTo(bx+bw*0.17,by+bh);g.stroke();g.restore();
+  rr(g,bx,by,bw,bh,rad);g.strokeStyle='rgba(0,0,0,.28)';g.lineWidth=1;g.stroke();
 }
 function glass(g,x,y,w,h){
   const gg=g.createLinearGradient(0,y,0,y+h);
@@ -608,10 +654,20 @@ function drawPlayerCar(){
   if(diff==='ghost')ctx.restore();
 }
 function drawGuardrail(side){
-  const x=side==='L'?roadX-3:roadX+roadW;
-  ctx.fillStyle='#9aa0a8';ctx.fillRect(x,0,3,H);                    // Schiene
-  ctx.fillStyle='rgba(255,255,255,.5)';ctx.fillRect(x,0,1,H);
-  ctx.fillStyle='#54585f';for(let yy=(-scroll*1+1000)%34;yy<H;yy+=34){ctx.fillRect(x-1,yy,5,5);}  // Pfosten
+  const x=side==='L'?roadX-5:roadX+roadW-1;
+  // W-Profil Schiene: metallischer Gradient
+  const rg=ctx.createLinearGradient(x,0,x+6,0);
+  rg.addColorStop(0,'#50555e');rg.addColorStop(0.25,'#9da3ac');rg.addColorStop(0.5,'#d0d4db');rg.addColorStop(0.75,'#9da3ac');rg.addColorStop(1,'#50555e');
+  ctx.fillStyle=rg;ctx.fillRect(x,0,6,H);
+  // Glanzlinie
+  ctx.fillStyle='rgba(255,255,255,0.38)';ctx.fillRect(x+1.5,0,1.5,H);
+  // Pfosten (dunkler, etwas breiter, mit Schatten)
+  const pOff=(-scroll*1+10000)%38;
+  for(let yy=(pOff%38+38)%38;yy<H+10;yy+=38){
+    ctx.fillStyle='rgba(0,0,0,0.28)';ctx.fillRect(x-2,yy+2,10,8);   // Schatten
+    ctx.fillStyle='#3a3e46';ctx.fillRect(x-2,yy,10,7);              // Pfosten
+    ctx.fillStyle='rgba(255,255,255,0.14)';ctx.fillRect(x-1,yy,2,7); // Glanz
+  }
 }
 function drawSign(s){
   const y=s.y;ctx.save();
@@ -686,6 +742,11 @@ function drawWorld(){
   if(t>0.02){ctx.globalAlpha=t;fillPat(concretePat,300,0,W);ctx.globalAlpha=1;}
   // Fahrbahn
   fillPat(asphaltPat,440,roadX,roadW);
+  // Tiefenwirkung: heller Horizont oben, leicht dunkler unten
+  const depthGrad=ctx.createLinearGradient(0,0,0,H);
+  depthGrad.addColorStop(0,'rgba(155,163,172,0.20)');depthGrad.addColorStop(0.10,'rgba(155,163,172,0)');
+  depthGrad.addColorStop(0.88,'rgba(0,0,0,0)');depthGrad.addColorStop(1,'rgba(0,0,0,0.14)');
+  ctx.fillStyle=depthGrad;ctx.fillRect(roadX,0,roadW,H);
   if(t>0.02){ctx.fillStyle=`rgba(8,9,12,${0.55*t})`;ctx.fillRect(roadX,0,roadW,H);}   // Tunnel abdunkeln
   // Standstreifen
   ctx.fillStyle='rgba(0,0,0,.12)';ctx.fillRect(roadX+roadW-shoulderW,0,shoulderW,H);
@@ -710,9 +771,14 @@ function drawWorld(){
   }
 }
 function postFX(){
-  // Speed-Lines
-  if(speed>8){ctx.save();ctx.globalCompositeOperation='lighter';ctx.strokeStyle=`rgba(255,255,255,${Math.min(0.12,(speed-8)*0.02)})`;ctx.lineWidth=1;
-    for(let i=0;i<6;i++){const x=roadX+Math.random()*roadW;const y=Math.random()*H;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x,y+30+speed*3);ctx.stroke();}ctx.restore();}
+  // Speed-Lines (Motion-Blur-Streifen)
+  if(speed>6){ctx.save();ctx.globalCompositeOperation='lighter';
+    const sAlpha=Math.min(0.10,(speed-6)*0.014);
+    for(let i=0;i<8;i++){
+      const x=roadX+Math.random()*roadW,y=Math.random()*H,len=24+speed*3.5;
+      const sg=ctx.createLinearGradient(x,y,x,y+len);sg.addColorStop(0,'rgba(255,255,255,0)');sg.addColorStop(0.3,`rgba(255,255,255,${sAlpha})`);sg.addColorStop(1,'rgba(255,255,255,0)');
+      ctx.strokeStyle=sg;ctx.lineWidth=0.8+Math.random()*0.7;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x,y+len);ctx.stroke();}
+    ctx.restore();}
   // Distanz-Dunst oben
   const hz=ctx.createLinearGradient(0,0,0,H*0.18);hz.addColorStop(0,'rgba(120,130,140,.12)');hz.addColorStop(1,'rgba(120,130,140,0)');ctx.fillStyle=hz;ctx.fillRect(0,0,W,H*0.18);
   // Vignette
