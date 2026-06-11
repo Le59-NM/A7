@@ -79,6 +79,22 @@
   .cbtn{width:100%;border:none;border-radius:10px;padding:9px 0;font-size:12px;font-weight:800;letter-spacing:.04em;cursor:pointer;color:#11250e;background:#fff;}
   .cbtn.buy{background:#ffd23f;color:#1a1200;}
   .cbtn.on{background:rgba(255,210,63,.2);color:#ffd23f;cursor:default;}
+  .acard{background:rgba(12,18,10,.65);border:1.5px solid rgba(255,255,255,.16);border-radius:18px;padding:16px 16px 14px;display:flex;gap:14px;align-items:flex-start;backdrop-filter:blur(4px);}
+  .acard.active{border-color:#ffd23f;box-shadow:0 0 0 1px #ffd23f,0 6px 20px rgba(255,210,63,.2);}
+  .acard .aprev{flex:0 0 54px;display:flex;align-items:center;justify-content:center;}
+  .acard .ainfo{flex:1;display:flex;flex-direction:column;gap:5px;}
+  .acard .aname{font-size:15px;font-weight:800;color:#fff;}
+  .acard .adesc{font-size:11px;color:#9db09a;letter-spacing:.06em;}
+  .acard .specs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:6px 0 4px;}
+  .acard .spec{background:rgba(255,255,255,.07);border-radius:8px;padding:6px 4px;text-align:center;}
+  .acard .spec .sv{font-size:13px;font-weight:800;color:#fff;}
+  .acard .spec .sl{font-size:9px;color:#8a9e88;letter-spacing:.1em;text-transform:uppercase;margin-top:1px;}
+  .sbars{display:flex;flex-direction:column;gap:5px;}
+  .sbar-row{display:flex;align-items:center;gap:7px;}
+  .sbar-lbl{font-size:9px;color:#8a9e88;text-transform:uppercase;letter-spacing:.1em;width:48px;flex-shrink:0;}
+  .sbar{flex:1;height:5px;background:rgba(255,255,255,.12);border-radius:3px;overflow:hidden;}
+  .sbar-fill{height:100%;background:linear-gradient(90deg,#2a6e2a,#5bc95b);border-radius:3px;}
+  .acard .cbtn{margin-top:8px;}
   #over{justify-content:center;gap:18px;padding:26px;}
   #over .inner{position:relative;display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center;pointer-events:auto;}
   .crash{font-size:38px;font-weight:900;color:#fff;letter-spacing:.05em;text-shadow:0 3px 14px rgba(0,0,0,.7);}
@@ -138,8 +154,7 @@
         <button data-d="ghost">Ghost</button>
       </div>
       <button class="play" id="play">Losfahren</button>
-      <!-- Shop-Button vorerst ausgeblendet -->
-      <!-- <button class="play ghost2" id="shopBtn">Shop · Autos</button> -->
+      <button class="play ghost2" id="autosBtn">Meine Autos</button>
       <div class="hint">Tippen links / rechts · Desktop ← →</div>
     </div>
   </div>
@@ -169,6 +184,16 @@
       </div>
       <div class="grid" id="shopGrid"></div>
       <button class="btn ghost" id="shopBack">Zurück</button>
+    </div>
+  </div>
+  <div class="screen hidden" id="autos">
+    <div class="veil"></div>
+    <div class="shopwrap">
+      <div class="shophead">
+        <span class="stitle">Meine Autos</span>
+      </div>
+      <div id="autosGrid" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:2px;"></div>
+      <button class="btn ghost" id="autosBack">Zurück</button>
     </div>
   </div>
   <button id="mute" aria-label="Ton"></button>
@@ -415,7 +440,10 @@ function sprite(key,kind,color,cab){ return spriteCache[key] || (spriteCache[key
 
 /* ============ Autos / Shop ============ */
 const CARS=[
-  {id:'fiesta', name:'Ford Fiesta 1.1 Trend', price:0, kind:'hatch', color:'#edeef0'},
+  {id:'fiesta', name:'Ford Fiesta 1.1 Trend', price:0, kind:'hatch', color:'#edeef0',
+   displacement:1084, power:55, ps:75, cylinders:3,
+   maxKmh:170, rampMul:0.70, handling:0.19,
+   desc:'1.1 EcoBoost · 3-Zyl.'},
 ];
 const carDef=id=>CARS.find(c=>c.id===id)||CARS[0];
 let coins=0, owned={fiesta:true}, sel='fiesta';
@@ -861,8 +889,8 @@ function frame(){
     for(const e of enemies)blitVehicle(e);drawPlayerCar();drawParticles();drawFloats();drawFreeBar();postFX();
     return;
   }
-  const cfg=DIFF[diff];
-  speed=(state==='play')?cfg.base+score*cfg.ramp:4.2;
+  const cfg=DIFF[diff];const carCfg=carDef(sel);
+  speed=(state==='play')?Math.min(carCfg.maxKmh/18,cfg.base+score*cfg.ramp*(carCfg.rampMul||1)):4.2;
   scroll+=speed; fc++;
   if(state==='play'){
     const seg=ROUTE[segIndex];
@@ -883,7 +911,7 @@ function frame(){
       player.wob=Math.sin(fc*0.6)*0.18;
       if(player.ctrl===0){player.lane=Math.max(0,Math.min(LANES-1,Math.round((player.x-roadX-laneW/2)/laneW)));player.targetX=lanes[player.lane];player.wob=0;}
     } else { player.wob*=0.8; }
-    player.x+=(player.targetX-player.x)*0.25;
+    player.x+=(player.targetX-player.x)*(carCfg.handling||0.22);
     // Verkehr (nicht während freier Fahrt)
     const gap=Math.max(30,cfg.gap-score*0.012);
     if(brakeFactor<0.35) enemies=enemies.filter(e=>e.y>-H);
@@ -1000,7 +1028,42 @@ const SVG_OFF='<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path
 function renderMute(){muteBtn.innerHTML=AU.isMuted()?SVG_OFF:SVG_ON;}
 muteBtn.onclick=()=>{AU.resume();AU.setMuted(!AU.isMuted());renderMute();};
 renderMute();
-// document.getElementById('shopBtn').onclick=openShop;
+function renderAutos(){
+  const grid=document.getElementById('autosGrid');grid.innerHTML='';
+  for(const c of CARS){
+    if(!owned[c.id])continue;
+    const card=document.createElement('div');card.className='acard'+(sel===c.id?' active':'');
+    // Preview
+    const prev=document.createElement('div');prev.className='aprev';
+    const cv2=buildSkinSprite(c,54,92);prev.appendChild(cv2);card.appendChild(prev);
+    // Info
+    const info=document.createElement('div');info.className='ainfo';
+    const nm=document.createElement('div');nm.className='aname';nm.textContent=c.name;info.appendChild(nm);
+    const ds=document.createElement('div');ds.className='adesc';ds.textContent=c.desc||'';info.appendChild(ds);
+    // Specs grid
+    const specs=document.createElement('div');specs.className='specs';
+    [[c.displacement.toLocaleString('de-DE')+' cm³','Hubraum'],[c.ps+' PS','Leistung'],[c.cylinders+'-Zyl.','Motor']].forEach(([v,l])=>{
+      const sp=document.createElement('div');sp.className='spec';
+      sp.innerHTML=`<div class="sv">${v}</div><div class="sl">${l}</div>`;specs.appendChild(sp);
+    });info.appendChild(specs);
+    // Stat bars
+    const bars=document.createElement('div');bars.className='sbars';
+    [[c.maxKmh/250,'Tempo'],[c.rampMul/1.2,'Beschl.'],[c.handling/0.35,'Handling']].forEach(([ratio,lbl])=>{
+      const row=document.createElement('div');row.className='sbar-row';
+      row.innerHTML=`<div class="sbar-lbl">${lbl}</div><div class="sbar"><div class="sbar-fill" style="width:${Math.round(Math.min(1,ratio)*100)}%"></div></div>`;
+      bars.appendChild(row);
+    });info.appendChild(bars);
+    // Button
+    const btn=document.createElement('button');btn.className='cbtn';
+    if(sel===c.id){btn.textContent='Aktiv';btn.classList.add('on');btn.disabled=true;}
+    else{btn.textContent='Auswählen';btn.onclick=()=>{sel=c.id;delete spriteCache['P|'+sel];Store.save();AU.click();renderAutos();};}
+    info.appendChild(btn);card.appendChild(info);grid.appendChild(card);
+  }
+}
+function openAutos(){AU.resume();AU.click();renderAutos();document.getElementById('menu').classList.add('hidden');document.getElementById('autos').classList.remove('hidden');}
+function closeAutos(){AU.click();document.getElementById('autos').classList.add('hidden');refreshMenuStats();document.getElementById('menu').classList.remove('hidden');}
+document.getElementById('autosBtn').onclick=openAutos;
+document.getElementById('autosBack').onclick=closeAutos;
 document.getElementById('shopBack').onclick=closeShop;
 Store.load();
 requestAnimationFrame(frame);
