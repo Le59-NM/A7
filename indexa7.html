@@ -11,8 +11,9 @@
 <title>A7 RUN · Hamburg</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-  html,body{height:100%;background:#10160c;overflow:hidden;font-family:'Inter',system-ui,sans-serif;}
-  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#10160c;}
+  html{height:-webkit-fill-available;height:100dvh;}
+  body{min-height:-webkit-fill-available;min-height:100dvh;height:100%;background:#10160c;overflow:hidden;font-family:'Inter',system-ui,sans-serif;}
+  #wrap{position:fixed;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;background:#10160c;}
   canvas{display:block;touch-action:none;}
   .hud{position:absolute;top:0;left:0;right:0;padding:calc(14px + env(safe-area-inset-top)) 16px 14px;display:none;justify-content:space-between;align-items:flex-start;pointer-events:none;font-variant-numeric:tabular-nums;}
   .hud.on{display:flex;}
@@ -331,10 +332,10 @@ let W,H,DPR,laneW,lanes,roadX,roadW,shoulderW;
 const LANES=4, SS=2;
 function resize(){
   DPR=Math.min(window.devicePixelRatio||1,2);
-  W=Math.min(window.innerWidth,460); H=document.getElementById('wrap').clientHeight||window.innerHeight;
+  W=Math.min(window.innerWidth,460); H=window.innerHeight;
   cv.width=W*DPR; cv.height=H*DPR; cv.style.width=W+'px'; cv.style.height=H+'px';
   ctx.setTransform(DPR,0,0,DPR,0,0);
-  roadW=W; shoulderW=Math.round(W*0.05); roadX=0;
+  roadW=Math.min(W*0.82,380); shoulderW=roadW*0.085; roadX=(W-roadW)/2;
   const driveW=roadW-shoulderW; laneW=driveW/LANES;
   lanes=[]; for(let i=0;i<LANES;i++) lanes.push(roadX+laneW*i+laneW/2);
   spriteCache={};                       // Auflösung kann sich ändern -> Sprites neu
