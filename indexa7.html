@@ -334,7 +334,7 @@ function resize(){
   W=Math.min(window.innerWidth,460); H=document.getElementById('wrap').clientHeight||window.innerHeight;
   cv.width=W*DPR; cv.height=H*DPR; cv.style.width=W+'px'; cv.style.height=H+'px';
   ctx.setTransform(DPR,0,0,DPR,0,0);
-  roadW=Math.min(W*0.82,380); shoulderW=roadW*0.085; roadX=(W-roadW)/2;
+  roadW=W; shoulderW=Math.round(W*0.05); roadX=0;
   const driveW=roadW-shoulderW; laneW=driveW/LANES;
   lanes=[]; for(let i=0;i<LANES;i++) lanes.push(roadX+laneW*i+laneW/2);
   spriteCache={};                       // Auflösung kann sich ändern -> Sprites neu
