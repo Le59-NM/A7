@@ -901,12 +901,10 @@ window.addEventListener('resize',()=>{resize();buildTextures();});
 player.x=player.targetX=lanes[1]; player.y=H-carH()*1.7;
 
 let nightPeaked=false,runAch=[];
-let construction={active:false,endScore:0,nextAt:0};
 let polizei=null,polizeiNextAt=0,polizeiWarning=0;
 let maxKmh=0,runStartTime=0;
 function resetRun(){score=0;speed=DIFF[diff].base;scroll=0;spawnTimer=0;enemies=[];signs=[];segIndex=0;segStart=0;tunnelAmt=0;braking=false;brakeDepth=0;brakeFactor=1;
   pickups=[];particles=[];floats=[];pickupTimer=160;freeUntil=0;flash=0;skidMarks=[];nightAmt=0;milestoneReached=new Set();nearMissCount=0;nightPeaked=false;runAch=[];
-  construction={active:false,endScore:0,nextAt:Math.round((20+Math.random()*20)*200)};
   polizei=null;polizeiNextAt=Math.round((35+Math.random()*20)*200);polizeiWarning=0;
   maxKmh=0;runStartTime=Date.now();
   document.getElementById('polWarn').classList.remove('on');
@@ -1061,33 +1059,6 @@ function drawGuardrail(side){
     ctx.fillStyle='rgba(255,255,255,0.14)';ctx.fillRect(x-1,yy,2,7); // Glanz
   }
 }
-function drawConstruction(){
-  if(!construction.active)return;
-  const coneH=carH()*0.55,coneW=coneH*0.42;
-  // Striped barrier across lanes 0-1
-  const bx=roadX,bw=laneW*2,by=player.y-H*0.15;
-  ctx.save();
-  ctx.fillStyle='#f5a623';
-  for(let i=0;i<Math.ceil(bw/18);i++){
-    if(i%2===0){ctx.fillRect(bx+i*18,by-5,18,10);}
-  }
-  ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(bx,by-5,bw,10);
-  for(let i=0;i<Math.ceil(bw/18);i++){
-    ctx.fillStyle=i%2===0?'#f5a623':'#fff';
-    ctx.fillRect(bx+i*18+1,by-4,16,8);
-  }
-  // Cones along left shoulder and lane border
-  const coneXs=[roadX-coneW*0.5, roadX+laneW-coneW*0.5, roadX+laneW*2-coneW*0.5];
-  for(const cx of coneXs){
-    for(let r=0;r<5;r++){
-      const cy=player.y-H*0.05+r*(coneH*1.6);
-      ctx.beginPath();ctx.moveTo(cx+coneW/2,cy-coneH/2);ctx.lineTo(cx,cy+coneH/2);ctx.lineTo(cx+coneW,cy+coneH/2);ctx.closePath();
-      ctx.fillStyle='#f5a623';ctx.fill();
-      ctx.fillStyle='#fff';ctx.fillRect(cx+coneW*0.2,cy,coneW*0.6,coneH*0.18);
-    }
-  }
-  ctx.restore();
-}
 function drawPolizei(){
   if(!polizei)return;
   const cw=carW(),ch=carH();
@@ -1111,15 +1082,6 @@ function drawPolizei(){
 }
 function drawSign(s){
   const y=s.y;ctx.save();
-  if(s.type==='warn'){
-    // Orange/yellow Baustellen-Vorankündigung
-    const sw=Math.min(roadW*0.7,220),sx=roadX+(roadW-sw)/2,sh=28;
-    ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(sx+2,y-22+2,sw,sh);
-    rr(ctx,sx,y-22,sw,sh,5);ctx.fillStyle='#f5a623';ctx.fill();
-    ctx.fillStyle='#1a1200';ctx.font='700 12px Inter,sans-serif';ctx.textBaseline='middle';ctx.textAlign='center';
-    ctx.fillText('BAUSTELLE ' + (s.name||''),sx+sw/2,y-22+sh/2);
-    ctx.restore();return;
-  }
   ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(roadX-12,y-2,roadW+24,10);
   ctx.fillStyle='#3a3f47';ctx.fillRect(roadX-12,y-4,roadW+24,8);ctx.fillRect(roadX-12,y-26,6,26);ctx.fillRect(roadX+roadW+6,y-26,6,26);
   const sw=Math.min(roadW*0.78,260),sx=roadX+(roadW-sw)/2,sh=34;
@@ -1443,18 +1405,6 @@ function frame(){
     document.getElementById('speedo').textContent=_kmh;
     document.getElementById('speedo').style.color=_kmh<130?'#4ade80':_kmh<200?'#fbbf24':'#f87171';
     document.getElementById('speedo').style.textShadow=_kmh<130?'0 0 12px rgba(74,222,128,.5)':_kmh<200?'0 0 12px rgba(251,191,36,.5)':'0 0 12px rgba(248,113,113,.5)';
-    // Baustellen
-    if(!construction.active&&score>=construction.nextAt){
-      construction.active=true;construction.endScore=score+Math.round((2+Math.random()*3)*200);
-      signs.push({y:-30,name:'ahead',type:'warn'});
-    }
-    if(construction.active&&score>=construction.endScore){
-      construction.active=false;construction.nextAt=score+Math.round((25+Math.random()*25)*200);
-    }
-    if(construction.active){
-      // push NPCs out of blocked lanes 0-1
-      for(const e of enemies){if((e.lane===0||e.lane===1)&&e.y<player.y-carH()*3){e.lane=2;e.x=lanes[2];e.baseX=lanes[2];}}
-    }
     // Polizei
     if(!polizei&&score>=polizeiNextAt){
       polizei={x:lanes[1],y:-carH()*2,lane:1,speedMul:0.96};
@@ -1478,7 +1428,6 @@ function frame(){
   }
   ctx.clearRect(0,0,W,H);
   drawWorld();
-  drawConstruction();
   for(const s of signs)drawSign(s);
   for(const p of pickups)drawPickup(p);
   for(const e of enemies)blitVehicle(e);
