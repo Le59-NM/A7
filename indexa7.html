@@ -24,13 +24,14 @@
   .place.on{display:flex;}
   .place .shield{background:#0050a0;border:1.5px solid #fff;border-radius:4px;font-size:13px;font-weight:800;color:#fff;padding:1px 6px;}
   .place .name{color:#fff;font-size:15px;font-weight:700;white-space:nowrap;}
-  .speedo{position:absolute;right:calc(14px + env(safe-area-inset-right));bottom:calc(14px + env(safe-area-inset-bottom));z-index:55;display:none;flex-direction:column;align-items:center;justify-content:center;width:88px;height:88px;border-radius:50%;border:2px solid rgba(255,255,255,.25);background:rgba(10,14,8,.6);backdrop-filter:blur(5px);box-shadow:0 4px 16px rgba(0,0,0,.4),inset 0 0 18px rgba(0,0,0,.4);pointer-events:none;}
+  .speedo{position:absolute;right:calc(14px + env(safe-area-inset-right));top:calc(14px + env(safe-area-inset-top) + 46px);z-index:55;display:none;flex-direction:row;align-items:baseline;gap:3px;pointer-events:none;}
   .speedo.on{display:flex;}
-  .speedo .num{font-size:30px;font-weight:800;color:#4ade80;line-height:1;font-variant-numeric:tabular-nums;text-shadow:0 0 12px rgba(74,222,128,.4);transition:color .4s,text-shadow .4s;}
-  .speedo .unit{font-size:10px;letter-spacing:.18em;color:#9fb3c7;text-transform:uppercase;margin-top:3px;}
-  #brakeBtn{position:absolute;bottom:calc(24px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:55;display:none;flex-direction:column;align-items:center;justify-content:center;width:190px;height:78px;border-radius:18px;border:2px solid rgba(255,70,50,0.45);background:linear-gradient(to top,rgba(190,12,2,0.88) calc(var(--bd,0) * 100%),rgba(22,6,4,0.72) calc(var(--bd,0) * 100%));backdrop-filter:blur(5px);color:rgba(255,100,80,0.9);font-size:16px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;pointer-events:auto;touch-action:none;user-select:none;-webkit-user-select:none;transition:border-color .1s,color .1s;}
+  .speedo .num{font-size:22px;font-weight:800;color:#4ade80;line-height:1;font-variant-numeric:tabular-nums;text-shadow:0 0 10px rgba(74,222,128,.35);transition:color .4s,text-shadow .4s;}
+  .speedo .unit{font-size:9px;letter-spacing:.18em;color:#9fb3c7;text-transform:uppercase;}
+  #brakeBtn{position:absolute;bottom:calc(16px + env(safe-area-inset-bottom));right:calc(14px + env(safe-area-inset-right));left:auto;transform:none;z-index:55;display:none;flex-direction:column;align-items:center;justify-content:flex-end;width:70px;height:92px;padding-bottom:8px;border-radius:5px 5px 13px 13px;border:2px solid rgba(130,130,150,.28);border-bottom:3px solid rgba(100,100,120,.35);background:repeating-linear-gradient(to bottom,rgba(255,255,255,.045) 0px,rgba(255,255,255,.045) 2px,transparent 2px,transparent 9px),linear-gradient(to top,rgba(190,12,2,.90) calc(var(--bd,0)*100%),rgba(18,10,8,.92) calc(var(--bd,0)*100%));box-shadow:0 8px 26px rgba(0,0,0,.75),inset 0 1px 1px rgba(255,255,255,.06),inset 2px 0 6px rgba(0,0,0,.25),inset -2px 0 6px rgba(0,0,0,.25);color:rgba(200,200,220,.35);font-size:8px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;pointer-events:auto;touch-action:none;user-select:none;-webkit-user-select:none;transition:border-color .1s,box-shadow .1s;}
+  #brakeBtn::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:40%;height:13%;background:rgba(110,110,130,.18);border-radius:0 0 4px 4px;border-bottom:1px solid rgba(150,150,170,.18);}
   #brakeBtn.on{display:flex;}
-  #brakeBtn.active{border-color:rgba(255,110,90,0.95);color:#fff;}
+  #brakeBtn.active{border-color:rgba(220,60,40,.65);box-shadow:0 4px 14px rgba(0,0,0,.7),0 0 22px rgba(200,30,10,.32),inset 0 1px 1px rgba(255,255,255,.06);}
   .screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;pointer-events:none;}
   .screen.hidden{display:none;}
   .veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,12,6,.6) 0%,rgba(8,12,6,.28) 40%,rgba(8,12,6,.82) 100%);}
@@ -118,7 +119,7 @@
   .btn:active{transform:scale(.96);}
   .btn.primary{color:#1a1200;background:linear-gradient(95deg,#ffd23f,#ffe680);box-shadow:0 6px 20px rgba(255,210,63,.4);}
   .btn.ghost{color:#fff;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.4);backdrop-filter:blur(4px);}
-  #pauseBtn{position:absolute;top:calc(10px + env(safe-area-inset-top));right:calc(14px + env(safe-area-inset-right));z-index:60;width:36px;height:36px;border-radius:50%;border:1.5px solid rgba(255,255,255,.28);background:rgba(10,14,8,.52);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;cursor:pointer;pointer-events:auto;}
+  #pauseBtn{position:absolute;bottom:calc(14px + env(safe-area-inset-bottom) + 50px);left:calc(14px + env(safe-area-inset-left));top:auto;right:auto;z-index:60;width:36px;height:36px;border-radius:50%;border:1.5px solid rgba(255,255,255,.28);background:rgba(10,14,8,.52);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;cursor:pointer;pointer-events:auto;}
   #pauseBtn.on{display:flex;}
   #pauseBtn:active{transform:scale(.93);}
   #pause{justify-content:center;gap:18px;padding:26px;}
@@ -208,7 +209,7 @@
   </div>
   <div class="place" id="place"><span class="shield">A7</span><span class="name" id="placeName">Schnelsen</span></div>
   <div class="speedo" id="speedoBox"><span class="num" id="speedo">0</span><span class="unit">km/h</span></div>
-  <button id="brakeBtn" aria-label="Bremsen">BREMSE</button>
+  <button id="brakeBtn" aria-label="Bremsen"></button>
   <button id="selfDestructBtn" aria-label="Selbstzerstörung" title="Selbstzerstörung"></button>
   <div id="polWarn">POLIZEI</div>
 
