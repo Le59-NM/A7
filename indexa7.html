@@ -130,6 +130,9 @@
   .ghost-tag.on{display:inline-block;}
   .ghost-hud{position:absolute;top:calc(44px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:#7bdcff;background:rgba(0,0,0,.45);border:1px solid rgba(120,220,255,.35);border-radius:20px;padding:3px 10px;pointer-events:none;display:none;}
   .ghost-hud.on{display:block;}
+  #selfDestructBtn{position:absolute;top:calc(10px + env(safe-area-inset-top));left:calc(14px + env(safe-area-inset-left));z-index:60;width:36px;height:36px;border-radius:50%;border:2px solid rgba(255,60,60,0.6);background:radial-gradient(circle at 38% 35%,#ff4040,#a00000);box-shadow:0 0 10px rgba(255,40,40,0.5),inset 0 1px 2px rgba(255,180,180,0.3);display:none;cursor:pointer;pointer-events:auto;}
+  #selfDestructBtn.on{display:block;}
+  #selfDestructBtn:active{transform:scale(.88);box-shadow:0 0 18px rgba(255,40,40,0.8);}
   .seg button[data-d="ghost"].sel{background:rgba(120,220,255,.2);color:#7bdcff;border-color:rgba(120,220,255,.7);box-shadow:0 4px 14px rgba(120,220,255,.2);}
   .chal-card{width:100%;background:rgba(12,18,10,.65);border:1.5px solid rgba(255,255,255,.14);border-radius:16px;padding:14px 16px 12px;display:flex;flex-direction:column;gap:8px;pointer-events:auto;}
   .chal-head{display:flex;justify-content:space-between;align-items:center;}
@@ -163,6 +166,7 @@
   <div class="place" id="place"><span class="shield">A7</span><span class="name" id="placeName">Schnelsen</span></div>
   <div class="speedo" id="speedoBox"><span class="num" id="speedo">0</span><span class="unit">km/h</span></div>
   <button id="brakeBtn" aria-label="Bremsen">BREMSE</button>
+  <button id="selfDestructBtn" aria-label="Selbstzerstörung" title="Selbstzerstörung"></button>
 
   <div class="screen" id="menu">
     <div class="veil"></div>
@@ -791,6 +795,9 @@ window.addEventListener('keyup',e=>{
   bb.addEventListener('pointerup',()=>{braking=false;brakeDepth=0;bb.classList.remove('active');bb.style.setProperty('--bd','0');});
   bb.addEventListener('pointercancel',()=>{braking=false;brakeDepth=0;bb.classList.remove('active');bb.style.setProperty('--bd','0');});
 })();
+document.getElementById('selfDestructBtn').addEventListener('pointerdown',e=>{
+  if(state!=='play')return;e.stopPropagation();crash();
+});
 
 /* ============ spawn ============ */
 function spawn(ambient){
@@ -1231,9 +1238,9 @@ function crash(){paused=false;state='over';bests[diff]=Math.max(bests[diff]||0,s
   if(km>799)v='Füssen – fast da! Vollgas zum Grenztunnel!';
   if(km>803)v='Grenztunnel Füssen erreicht – absolut legendär!';
   document.getElementById('verdict').textContent=v;
-  document.getElementById('hud').classList.remove('on');document.getElementById('place').classList.remove('on');document.getElementById('speedoBox').classList.remove('on');document.getElementById('brakeBtn').classList.remove('on');braking=false;brakeDepth=0;brakeFactor=1;document.getElementById('over').classList.remove('hidden');}
-function startGame(){AU.resume();AU.click();resetRun();state='play';paused=false;AU.engineStart();document.getElementById('menu').classList.add('hidden');document.getElementById('over').classList.add('hidden');document.getElementById('pause').classList.add('hidden');document.getElementById('hud').classList.add('on');document.getElementById('place').classList.add('on');document.getElementById('speedoBox').classList.add('on');document.getElementById('pauseBtn').classList.add('on');document.getElementById('ghostHud').classList.toggle('on',diff==='ghost');document.getElementById('brakeBtn').classList.add('on');}
-function toMenu(){paused=false;AU.engineStop();AU.click();state='menu';enemies=[];signs=[];pickups=[];particles=[];floats=[];tunnelAmt=0;player=newPlayer();player.x=player.targetX=lanes[1];player.y=H-carH()*1.7;goToPage(0,false);refreshMenuStats();document.getElementById('speedoBox').classList.remove('on');document.getElementById('over').classList.add('hidden');document.getElementById('pause').classList.add('hidden');document.getElementById('pauseBtn').classList.remove('on');document.getElementById('ghostHud').classList.remove('on');document.getElementById('brakeBtn').classList.remove('on');braking=false;brakeDepth=0;brakeFactor=1;document.getElementById('menu').classList.remove('hidden');}
+  document.getElementById('hud').classList.remove('on');document.getElementById('place').classList.remove('on');document.getElementById('speedoBox').classList.remove('on');document.getElementById('brakeBtn').classList.remove('on');document.getElementById('selfDestructBtn').classList.remove('on');braking=false;brakeDepth=0;brakeFactor=1;document.getElementById('over').classList.remove('hidden');}
+function startGame(){AU.resume();AU.click();resetRun();state='play';paused=false;AU.engineStart();document.getElementById('menu').classList.add('hidden');document.getElementById('over').classList.add('hidden');document.getElementById('pause').classList.add('hidden');document.getElementById('hud').classList.add('on');document.getElementById('place').classList.add('on');document.getElementById('speedoBox').classList.add('on');document.getElementById('pauseBtn').classList.add('on');document.getElementById('ghostHud').classList.toggle('on',diff==='ghost');document.getElementById('brakeBtn').classList.add('on');document.getElementById('selfDestructBtn').classList.toggle('on',diff==='ghost');}
+function toMenu(){paused=false;AU.engineStop();AU.click();state='menu';enemies=[];signs=[];pickups=[];particles=[];floats=[];tunnelAmt=0;player=newPlayer();player.x=player.targetX=lanes[1];player.y=H-carH()*1.7;goToPage(0,false);refreshMenuStats();document.getElementById('speedoBox').classList.remove('on');document.getElementById('over').classList.add('hidden');document.getElementById('pause').classList.add('hidden');document.getElementById('pauseBtn').classList.remove('on');document.getElementById('ghostHud').classList.remove('on');document.getElementById('brakeBtn').classList.remove('on');document.getElementById('selfDestructBtn').classList.remove('on');braking=false;brakeDepth=0;brakeFactor=1;document.getElementById('menu').classList.remove('hidden');}
 function openShop(){AU.resume();AU.click();renderShop();document.getElementById('menu').classList.add('hidden');document.getElementById('over').classList.add('hidden');document.getElementById('shop').classList.remove('hidden');}
 function closeShop(){AU.click();document.getElementById('shop').classList.add('hidden');refreshMenuStats();document.getElementById('menu').classList.remove('hidden');}
 function renderShop(){
