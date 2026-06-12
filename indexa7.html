@@ -1161,9 +1161,8 @@ function frame(){
     if(score>=freeUntil && (spawnTimer+=brakeFactor)>=gap && enemies.length<cfg.maxNpc){spawnTimer=0;spawn(false);}
     if(--pickupTimer<=0){pickupTimer=180+(Math.random()*160|0);spawnPickup();}
     const h=carH(), invuln=player.air>0||score<freeUntil;
-    // NPCs haben eigene Weltgeschwindigkeit: e.y += eff - speed*relSpd
-    // Bei bremsen (eff sinkt) nähern sich NPCs langsamer oder bleiben zurück — kein mitbremsen
-    for(const e of enemies){const rs=e.relSpd??0.12;e.y+=(eff-speed*rs)*(e.speedMul||1);if(e.baseX!==undefined)e.x=e.baseX+Math.sin(fc*(e.wobFreq||0.02)+(e.wobPhase||0))*(e.wobAmp||0);const eh=h*(e.truck?2.35:1);
+    // NPCs fahren immer mit voller speed weiter — beim Bremsen überholen sie den Spieler
+    for(const e of enemies){e.y+=speed*(e.speedMul||1);if(e.baseX!==undefined)e.x=e.baseX+Math.sin(fc*(e.wobFreq||0.02)+(e.wobPhase||0))*(e.wobAmp||0);const eh=h*(e.truck?2.35:1);
       if(diff!=='ghost'&&!invuln&&Math.abs(e.x-player.x)<carW()*0.6&&Math.abs(e.y-player.y)<(eh+h)/2*0.82){crash();return;}
       // Beinahe-Kollision: NPC passiert Spieler mit knappem Abstand
       if(!e.passed&&e.y>player.y+h*0.55){e.passed=true;
