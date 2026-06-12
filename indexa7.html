@@ -1062,23 +1062,35 @@ function drawGuardrail(side){
 function drawPolizei(){
   if(!polizei)return;
   const cw=carW(),ch=carH();
+  const t=Date.now();const blink=Math.floor(t/100)%2;
   ctx.save();ctx.translate(polizei.x,polizei.y);
-  // White sedan body
+  // Body
   ctx.fillStyle='#f0f0f4';rr(ctx,-cw/2,-ch/2,cw,ch,6);ctx.fill();
-  ctx.fillStyle='rgba(0,0,0,.12)';ctx.fillRect(-cw/2+2,-ch/2+2,cw-4,ch-4);
-  ctx.fillStyle='#2244aa';ctx.fillRect(-cw/2,-ch*0.08,cw,ch*0.16);
-  ctx.fillStyle='rgba(255,255,255,.9)';ctx.font='bold 7px Inter,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('POLIZEI',0,0);
-  // Flashing lights
-  const t=Date.now();const blink=Math.floor(t/120)%2;
-  ctx.shadowBlur=14;
-  ctx.fillStyle=blink?'rgba(40,100,255,.95)':'rgba(255,40,40,.95)';
+  ctx.fillStyle='rgba(0,0,0,.1)';ctx.fillRect(-cw/2+2,-ch/2+2,cw-4,ch-4);
+  // Blue stripe + POLIZEI label
+  ctx.fillStyle='#1a3caa';ctx.fillRect(-cw/2,-ch*0.09,cw,ch*0.18);
+  ctx.fillStyle='rgba(255,255,255,.92)';ctx.font='bold 7px Inter,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('POLIZEI',0,0);
+  // Flashing lights on roof (front = top of car)
+  ctx.shadowBlur=18;
+  ctx.fillStyle=blink?'rgba(40,110,255,.98)':'rgba(255,35,35,.98)';
   ctx.shadowColor=blink?'#2264ff':'#ff2828';
-  ctx.beginPath();ctx.arc(-cw*0.28,-ch*0.44,cw*0.14,0,7);ctx.fill();
-  ctx.fillStyle=blink?'rgba(255,40,40,.95)':'rgba(40,100,255,.95)';
+  ctx.beginPath();ctx.arc(-cw*0.26,-ch*0.42,cw*0.15,0,7);ctx.fill();
+  ctx.fillStyle=blink?'rgba(255,35,35,.98)':'rgba(40,110,255,.98)';
   ctx.shadowColor=blink?'#ff2828':'#2264ff';
-  ctx.beginPath();ctx.arc(cw*0.28,-ch*0.44,cw*0.14,0,7);ctx.fill();
+  ctx.beginPath();ctx.arc(cw*0.26,-ch*0.42,cw*0.15,0,7);ctx.fill();
   ctx.shadowBlur=0;
   ctx.restore();
+  // Warnanzeige: Fortschrittsbalken am unteren Bildschirmrand
+  if(polizeiWarning>0){
+    const ratio=Math.min(1,polizeiWarning/220);
+    const bw=roadW*ratio,bh=5,by=H-bh;
+    ctx.save();
+    ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(roadX,by,roadW,bh);
+    const grad=ctx.createLinearGradient(roadX,0,roadX+bw,0);
+    grad.addColorStop(0,blink?'#2264ff':'#cc1111');grad.addColorStop(1,blink?'#cc1111':'#2264ff');
+    ctx.fillStyle=grad;ctx.fillRect(roadX,by,bw,bh);
+    ctx.restore();
+  }
 }
 function drawSign(s){
   const y=s.y;ctx.save();
@@ -1405,20 +1417,51 @@ function frame(){
     document.getElementById('speedo').textContent=_kmh;
     document.getElementById('speedo').style.color=_kmh<130?'#4ade80':_kmh<200?'#fbbf24':'#f87171';
     document.getElementById('speedo').style.textShadow=_kmh<130?'0 0 12px rgba(74,222,128,.5)':_kmh<200?'0 0 12px rgba(251,191,36,.5)':'0 0 12px rgba(248,113,113,.5)';
-    // Polizei
+    // Polizei — spawnt von hinten, verfolgt den Spieler
     if(!polizei&&score>=polizeiNextAt){
-      polizei={x:lanes[1],y:-carH()*2,lane:1,speedMul:0.96};
+      const sl=1+Math.floor(Math.random()*2);
+      polizei={x:lanes[sl],y:H+carH()*3,lane:sl,speedMul:1.18,timer:0};
       AU.siren();document.getElementById('polWarn').classList.add('on');
     }
     if(polizei){
-      polizei.y+=eff-speed*polizei.speedMul+0.28;
-      if(polizei.y>H+carH()*2){polizei=null;polizeiWarning=0;polizeiNextAt=score+Math.round((40+Math.random()*30)*200);document.getElementById('polWarn').classList.remove('on');}
-      else if(diff!=='ghost'){
-        const ph=carH();
-        if(Math.abs(polizei.x-player.x)<carW()*0.7&&Math.abs(polizei.y-player.y)<ph*0.9){crash();return;}
-        if(Math.abs(polizei.x-player.x)<carW()*2&&polizei.y>player.y-ph*4&&polizei.y<player.y+ph){
-          polizeiWarning++;if(polizeiWarning>240){addFloat('Erwischt!','#ff4040');crash();return;}
-        }else{if(polizeiWarning>0)polizeiWarning=Math.max(0,polizeiWarning-1);}
+      const ph=carH(),pw=carW();
+      polizei.timer++;
+      // Auf Spieler-Spur lenken, wenn nahe genug
+      if(polizei.y<H*0.85&&Math.abs(polizei.lane-player.lane)>0&&polizei.timer%40===0){
+        polizei.lane+=(player.lane>polizei.lane?1:-1);
+      }
+      // NPC-Ausweichen: prüfe Hindernisse in Fahrtrichtung (y < polizei.y, same lane)
+      const lookDist=ph*5;
+      const blocking=enemies.filter(e=>e.lane===polizei.lane&&e.y<polizei.y&&e.y>polizei.y-lookDist);
+      if(blocking.length>0){
+        // Nächstes Hindernis
+        const nearest=blocking.reduce((a,b)=>polizei.y-a.y<polizei.y-b.y?a:b);
+        const gap=polizei.y-nearest.y;
+        if(gap<ph*1.4){
+          // Harte Kollision: NPC wegdrücken
+          nearest.y+=eff-speed*polizei.speedMul;
+        } else {
+          // Weichausweichen: freie Spur suchen
+          const free=[0,1,2,3].filter(l=>!enemies.some(e=>e.lane===l&&e.y<polizei.y&&e.y>polizei.y-lookDist));
+          if(free.length>0) polizei.lane=free.reduce((a,b)=>Math.abs(a-polizei.lane)<=Math.abs(b-polizei.lane)?a:b);
+        }
+      }
+      // Smooth x → Zielspur
+      polizei.x+=(lanes[polizei.lane]-polizei.x)*0.06;
+      // Bewegung: speedMul>1 → y sinkt → Auto nähert sich von unten
+      polizei.y+=eff-speed*polizei.speedMul;
+      // Aufgeben nach ~900 Frames oder weit genug entkommen
+      if(polizei.timer>900||polizei.y<-ph*4){
+        addFloat('Entkommen!','#4ade80');
+        polizei=null;polizeiWarning=0;polizeiNextAt=score+Math.round((45+Math.random()*35)*200);
+        document.getElementById('polWarn').classList.remove('on');
+      } else if(diff!=='ghost'){
+        if(Math.abs(polizei.x-player.x)<pw*0.65&&Math.abs(polizei.y-player.y)<ph*0.88){crash();return;}
+        // Warnung wenn Polizei nah hinter Spieler ist (polizei.y > player.y = Polizei ist weiter unten = hinter dem Spieler)
+        const behind=polizei.y>player.y&&polizei.y<player.y+ph*5;
+        if(behind&&Math.abs(polizei.x-player.x)<pw*2){
+          polizeiWarning++;if(polizeiWarning>220){addFloat('Erwischt!','#ff4040');crash();return;}
+        }else{if(polizeiWarning>0)polizeiWarning=Math.max(0,polizeiWarning-2);}
       }
     }
   }else{
