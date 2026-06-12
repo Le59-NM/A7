@@ -830,19 +830,6 @@ const PRESTIGE=[
   {km: 20000, name:'Platin', color:'#b8d4f0', bg:'rgba(184,212,240,.18)', bd:'rgba(184,212,240,.5)'},
   {km: 50000, name:'Legende',color:'#c07be0', bg:'rgba(192,123,224,.22)', bd:'rgba(192,123,224,.55)'},
 ];
-// Precompute A7 exit sign schedule from ROUTE (exit number starts at 23 = Hamburg-Schnelsen)
-const ROUTE_EXIT_SCHED=(()=>{
-  const list=[];let cs=0,en=23;
-  for(let i=0;i<ROUTE.length;i++){
-    const seg=ROUTE[i];
-    if(seg.type!=='tunnel'){
-      const isJct=/Dreieck|Kreuz|Horster/.test(seg.name);
-      list.push({score:Math.max(0,cs-300),name:seg.name,num:isJct?null:en++,jct:isJct});
-    }
-    cs+=seg.len;
-  }
-  return list;
-})();
 let diff='normal';
 let paused=false;
 let state='menu',score=0,speed=6,scroll=0,spawnTimer=0;
@@ -870,9 +857,9 @@ buildTextures(); player=newPlayer(); resize();
 window.addEventListener('resize',()=>{resize();buildTextures();});
 player.x=player.targetX=lanes[1]; player.y=H-carH()*1.7;
 
-let exitSignIdx=0,nightPeaked=false,runAch=[];
+let nightPeaked=false,runAch=[];
 function resetRun(){score=0;speed=DIFF[diff].base;scroll=0;spawnTimer=0;enemies=[];signs=[];segIndex=0;segStart=0;tunnelAmt=0;braking=false;brakeDepth=0;brakeFactor=1;
-  pickups=[];particles=[];floats=[];pickupTimer=160;freeUntil=0;flash=0;skidMarks=[];nightAmt=0;milestoneReached=new Set();nearMissCount=0;exitSignIdx=0;nightPeaked=false;runAch=[];
+  pickups=[];particles=[];floats=[];pickupTimer=160;freeUntil=0;flash=0;skidMarks=[];nightAmt=0;milestoneReached=new Set();nearMissCount=0;nightPeaked=false;runAch=[];
   player=newPlayer();player.x=player.targetX=lanes[1];player.y=H-carH()*1.7;document.getElementById('placeName').textContent=ROUTE[0].name;}
 
 /* ============ input ============ */
@@ -1026,45 +1013,14 @@ function drawGuardrail(side){
 }
 function drawSign(s){
   const y=s.y;ctx.save();
-  if(s.type==='exit'||s.type==='jct'){
-    // Grünes Autobahn-Ausfahrtschild rechts neben der Fahrbahn
-    const rx=roadX+roadW+8;
-    const sw=Math.min(W-rx-4,110), sh=s.num?44:32;
-    const sx=rx, sy=y-sh-4;
-    // Pfahl
-    ctx.fillStyle='#5a6060';ctx.fillRect(sx+sw/2-3,sy+sh,6,18);
-    // Schild-Schatten
-    ctx.fillStyle='rgba(0,0,0,.3)';rr(ctx,sx+2,sy+2,sw,sh,4);ctx.fill();
-    // Schild Hintergrund
-    rr(ctx,sx,sy,sw,sh,4);ctx.fillStyle='#006225';ctx.fill();
-    ctx.strokeStyle='#fff';ctx.lineWidth=1.5;rr(ctx,sx+2,sy+2,sw-4,sh-4,3);ctx.stroke();
-    ctx.fillStyle='#fff';ctx.textBaseline='middle';
-    if(s.num!=null){
-      ctx.font='600 9px Inter,sans-serif';ctx.fillText('Ausfahrt '+s.num,sx+7,sy+11);
-      ctx.font='700 12px Inter,sans-serif';
-      const name=s.name.length>14?s.name.slice(0,13)+'…':s.name;
-      ctx.fillText(name,sx+7,sy+28);
-      // Pfeil
-      ctx.beginPath();ctx.moveTo(sx+sw-10,sy+sh/2-6);ctx.lineTo(sx+sw-6,sy+sh/2);ctx.lineTo(sx+sw-10,sy+sh/2+6);ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
-    }else{
-      // Dreieck / Kreuz — anderes Symbol
-      ctx.font='700 10px Inter,sans-serif';ctx.fillText('⬆',sx+7,sy+10);
-      ctx.font='700 11px Inter,sans-serif';
-      const name=s.name.length>14?s.name.slice(0,13)+'…':s.name;
-      ctx.fillText(name,sx+20,sy+sh/2+1);
-    }
-  }else{
-    // Blaues Gantry-Schild (wie bisher)
-    ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(roadX-12,y-2,roadW+24,10);
-    ctx.fillStyle='#3a3f47';ctx.fillRect(roadX-12,y-4,roadW+24,8);ctx.fillRect(roadX-12,y-26,6,26);ctx.fillRect(roadX+roadW+6,y-26,6,26);
-    const sw=Math.min(roadW*0.78,260),sx=roadX+(roadW-sw)/2,sh=34;
-    rr(ctx,sx,y-30,sw,sh,5);ctx.fillStyle='#0050a0';ctx.fill();
-    ctx.strokeStyle='#fff';ctx.lineWidth=2;rr(ctx,sx+3,y-27,sw-6,sh-6,3);ctx.stroke();
-    rr(ctx,sx+8,y-25,30,sh-10,3);ctx.fillStyle='#0050a0';ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.stroke();
-    ctx.fillStyle='#fff';ctx.textBaseline='middle';ctx.font='700 13px Inter,sans-serif';ctx.fillText('A7',sx+13,y-25+(sh-10)/2);
-    ctx.font='700 14px Inter,sans-serif';ctx.fillText(s.name,sx+46,y-30+sh/2);
-  }
-  ctx.restore();
+  ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(roadX-12,y-2,roadW+24,10);
+  ctx.fillStyle='#3a3f47';ctx.fillRect(roadX-12,y-4,roadW+24,8);ctx.fillRect(roadX-12,y-26,6,26);ctx.fillRect(roadX+roadW+6,y-26,6,26);
+  const sw=Math.min(roadW*0.78,260),sx=roadX+(roadW-sw)/2,sh=34;
+  rr(ctx,sx,y-30,sw,sh,5);ctx.fillStyle='#0050a0';ctx.fill();
+  ctx.strokeStyle='#fff';ctx.lineWidth=2;rr(ctx,sx+3,y-27,sw-6,sh-6,3);ctx.stroke();
+  rr(ctx,sx+8,y-25,30,sh-10,3);ctx.fillStyle='#0050a0';ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.stroke();
+  ctx.fillStyle='#fff';ctx.textBaseline='middle';ctx.font='700 13px Inter,sans-serif';ctx.fillText('A7',sx+13,y-25+(sh-10)/2);
+  ctx.font='700 14px Inter,sans-serif';ctx.fillText(s.name,sx+46,y-30+sh/2);ctx.restore();
 }
 function drawPickup(p){
   const x=p.x,y=p.y,w=laneW*0.78,h=carH()*0.9;
@@ -1364,11 +1320,6 @@ function frame(){
     nightAmt+=(_nTarget-nightAmt)*0.002;
     if(nightAmt>0.85&&!nightPeaked)nightPeaked=true;
     if(nightPeaked&&nightAmt<0.15){unlockAch('night_full');nightPeaked=false;}
-    // Autobahn-Ausfahrtschilder (aus ROUTE_EXIT_SCHED)
-    while(exitSignIdx<ROUTE_EXIT_SCHED.length&&score>=ROUTE_EXIT_SCHED[exitSignIdx].score){
-      const es=ROUTE_EXIT_SCHED[exitSignIdx++];
-      signs.push({y:-60,name:es.name,num:es.num,type:es.jct?'jct':'exit'});
-    }
     // Reifenspuren
     if(brakeFactor<0.48&&fc%3===0){const cw=carW(),ch=carH();
       skidMarks.push({x:player.x-cw*0.22,y:player.y+ch*0.37,a:(0.48-brakeFactor)*1.5},{x:player.x+cw*0.22,y:player.y+ch*0.37,a:(0.48-brakeFactor)*1.5});
