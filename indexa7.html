@@ -154,6 +154,39 @@
   .color-swatch.active{border-color:#ffd23f;transform:scale(1.22);}
   .color-swatch:not(.active){border-color:rgba(255,255,255,.18);}
   .milestone-badge{position:absolute;top:calc(50% - 30px);left:50%;transform:translateX(-50%);background:rgba(255,210,63,.92);color:#1a1200;font-size:13px;font-weight:900;letter-spacing:.1em;border-radius:20px;padding:7px 18px;box-shadow:0 4px 18px rgba(0,0,0,.5);pointer-events:none;display:none;}
+  /* Achievement toast */
+  #achToast{position:absolute;top:calc(56px + env(safe-area-inset-top));left:50%;transform:translateX(-50%) translateY(-10px);z-index:80;background:rgba(10,16,8,.94);border:1.5px solid #ffd23f;border-radius:14px;padding:10px 18px;display:flex;align-items:center;gap:10px;opacity:0;transition:opacity .35s,transform .35s;pointer-events:none;white-space:nowrap;max-width:calc(100vw - 32px);}
+  #achToast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .ach-ti{font-size:20px;flex-shrink:0;}
+  .ach-tx{display:flex;flex-direction:column;gap:1px;min-width:0;}
+  .ach-tl{font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:#ffd23f;}
+  .ach-tn{font-size:14px;font-weight:800;color:#fff;overflow:hidden;text-overflow:ellipsis;}
+  /* Achievement screen */
+  #achScreen{justify-content:flex-start;}
+  .achWrap{position:relative;width:100%;max-width:430px;height:100%;display:flex;flex-direction:column;padding:54px 18px 22px;gap:14px;pointer-events:auto;}
+  .ach-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:2px 2px 80px;}
+  .ach-row{display:flex;align-items:center;gap:12px;background:rgba(12,18,10,.65);border:1.5px solid rgba(255,255,255,.1);border-radius:14px;padding:12px 14px;}
+  .ach-row.done{border-color:rgba(255,210,63,.4);}
+  .ach-em{font-size:22px;width:30px;text-align:center;flex-shrink:0;filter:grayscale(1);opacity:.3;}
+  .ach-row.done .ach-em{filter:none;opacity:1;}
+  .ach-info{flex:1;display:flex;flex-direction:column;gap:2px;}
+  .ach-nm{font-size:13px;font-weight:700;color:#6a7868;}
+  .ach-desc{font-size:11px;color:#4a5648;}
+  .ach-rw{font-size:11px;color:#ffd23f;font-weight:700;white-space:nowrap;opacity:.4;}
+  .ach-row.done .ach-nm{color:#ffd23f;}
+  .ach-row.done .ach-desc{color:#8a9e88;}
+  .ach-row.done .ach-rw{opacity:1;}
+  /* Prestige badge */
+  .prst{font-size:9px;letter-spacing:.16em;font-weight:800;border-radius:20px;padding:2px 10px;text-transform:uppercase;display:none;margin-top:2px;}
+  .prst.on{display:inline-block;}
+  /* Prestige colors (locked) */
+  .color-swatch{position:relative;}
+  .color-swatch.locked{opacity:.3;cursor:default;}
+  .color-swatch.locked::after{content:'🔒';font-size:7px;position:absolute;bottom:-1px;right:-1px;}
+  /* Extra achievements button */
+  .btn-row-sec{display:flex;gap:8px;width:100%;}
+  .btn-sm{flex:1;cursor:pointer;border:1.5px solid rgba(255,255,255,.22);background:rgba(10,14,8,.4);color:#dfe6d8;padding:9px 0;border-radius:12px;font-size:11px;font-weight:700;letter-spacing:.06em;backdrop-filter:blur(4px);}
+  .btn-sm:active{transform:scale(.96);}
 </style>
 </head>
 <body>
@@ -179,6 +212,7 @@
             <div><span class="l">Rekord</span><span class="v" id="rec">—</span></div>
             <div><span class="l">Coins</span><span class="v gold" id="coins">0</span></div>
           </div>
+          <span class="prst" id="prstBadge"></span>
         </div>
         <div class="bottom">
           <div class="difflabel">Schwierigkeit</div>
@@ -196,6 +230,10 @@
             <button class="chal-claim" id="chalClaim" style="display:none">Abholen!</button>
           </div>
           <button class="play" id="play">Losfahren</button>
+          <div class="btn-row-sec">
+            <button class="btn-sm" id="achBtn">Erfolge</button>
+            <button class="btn-sm" id="shopBtn">Shop</button>
+          </div>
           <div class="hint">Tippen links / rechts · Desktop ← →</div>
         </div>
       </div>
@@ -225,6 +263,7 @@
       </div>
       <div class="verdict" id="verdict">Geht besser.</div>
       <div class="earned" id="earned">+0 Coins</div>
+      <div id="overAch" style="display:none;flex-direction:column;gap:4px;width:100%;max-width:300px;"></div>
       <div class="btnrow">
         <button class="btn ghost" id="toMenu">Menü</button>
         <button class="btn primary" id="retry">Nochmal</button>
@@ -252,6 +291,19 @@
       <button class="btn ghost" id="autosBack">Zurück</button>
     </div>
   </div>
+  <!-- Achievement toast -->
+  <div id="achToast"><span class="ach-ti" id="achIcon"></span><div class="ach-tx"><span class="ach-tl">Erfolg freigeschaltet</span><span class="ach-tn" id="achName"></span></div></div>
+
+  <!-- Achievement screen -->
+  <div class="screen hidden" id="achScreen">
+    <div class="veil"></div>
+    <div class="achWrap">
+      <div class="shophead"><span class="stitle">Erfolge</span><span class="balance" id="achCount">0 / 0</span></div>
+      <div class="ach-list" id="achList"></div>
+      <button class="btn ghost" id="achBack">Zurück</button>
+    </div>
+  </div>
+
   <button id="mute" aria-label="Ton"></button>
   <button id="pauseBtn" aria-label="Pause"><svg width="14" height="14" viewBox="0 0 14 14" fill="#fff"><rect x="2" y="1" width="4" height="12" rx="1.5"/><rect x="8" y="1" width="4" height="12" rx="1.5"/></svg></button>
   <div class="ghost-hud" id="ghostHud">GHOST MODE</div>
@@ -579,7 +631,7 @@ const Store={
     const get=async k=>(await this._wsGet(k))??(await this._lsGet(k));
     const c=await get('a7:coins'),o=await get('a7:owned'),s=await get('a7:sel');
     const b=await get('a7:bests'),t=await get('a7:tuning'),cc=await get('a7:colors');
-    const dc=await get('a7:daily');
+    const dc=await get('a7:daily'),ach=await get('a7:ach'),tkm=await get('a7:totalkm');
     if(c!=null)coins=+c||0;
     if(o!=null){try{owned=JSON.parse(o);}catch(e){}}
     if(s!=null)sel=s;
@@ -587,21 +639,27 @@ const Store={
     if(t!=null){try{tuning=JSON.parse(t);}catch(e){}}
     if(cc!=null){try{carColors=JSON.parse(cc);}catch(e){}}
     if(dc!=null){try{dailyChallenge=JSON.parse(dc);}catch(e){}}
+    if(ach!=null){try{achievements=new Set(JSON.parse(ach));}catch(e){}}
+    if(tkm!=null)totalKm=+tkm||0;
     if(!owned||!owned.fiesta){owned=owned||{};owned.fiesta=true;} if(!owned[sel])sel='fiesta';
     refreshMenuStats();
   },
   async save(){
     const vals=[['a7:coins',String(Math.round(coins))],['a7:owned',JSON.stringify(owned)],
       ['a7:sel',sel],['a7:bests',JSON.stringify(bests)],['a7:tuning',JSON.stringify(tuning)],
-      ['a7:colors',JSON.stringify(carColors)],['a7:daily',JSON.stringify(dailyChallenge)]];
+      ['a7:colors',JSON.stringify(carColors)],['a7:daily',JSON.stringify(dailyChallenge)],
+      ['a7:ach',JSON.stringify([...achievements])],['a7:totalkm',String(Math.round(totalKm))]];
     for(const [k,v] of vals){this._wsPut(k,v);this._lsPut(k,v);}
   }
 };
+function currentPrestige(){let p=null;for(const t of PRESTIGE)if(totalKm>=t.km)p=t;return p;}
 function refreshMenuStats(){
   const b=bests[diff]||0;
   const rc=document.getElementById('rec');if(rc)rc.textContent=b>0?kmTxt(b):'—';
   const cc=document.getElementById('coins');if(cc)cc.textContent=Math.round(coins).toLocaleString('de-DE');
   const gc=document.getElementById('grgCoins');if(gc)gc.textContent=Math.round(coins).toLocaleString('de-DE');
+  const pb=document.getElementById('prstBadge');
+  if(pb){const p=currentPrestige();if(p){pb.textContent=p.name;pb.style.cssText=`background:${p.bg};border:1.5px solid ${p.bd};color:${p.color};display:inline-block;`;pb.classList.add('on');}else{pb.classList.remove('on');}}
   renderDailyChallenge();
 }
 
@@ -748,10 +806,49 @@ const DIFF={
   brutal:{base:6,ramp:0.0009,gap:32, minNpc:10,maxNpc:15},
   ghost: {base:6,ramp:0.0009,gap:72, minNpc:5, maxNpc:10},
 };
+const ACHIEVEMENTS=[
+  {id:'first_run',   icon:'🏁', name:'Erster Kilometer',  desc:'Ersten Run abschließen',            reward:200},
+  {id:'elbtunnel',   icon:'🚇', name:'Elbtunnel',          desc:'Mehr als 13 km fahren (Elbtunnel)', reward:300},
+  {id:'hamburg',     icon:'🌆', name:'Hamburg-Held',        desc:'Hamburg hinter sich lassen (>20 km)',reward:500},
+  {id:'km100',       icon:'💯', name:'100er',               desc:'100 km in einem Run',               reward:2000},
+  {id:'km250',       icon:'🏅', name:'250er',               desc:'250 km in einem Run',               reward:5000},
+  {id:'km500',       icon:'🎖️', name:'500er',               desc:'500 km in einem Run',              reward:10000},
+  {id:'nearmiss10',  icon:'😅', name:'Nasenspitze',         desc:'10× knapp vorbei in einem Run',     reward:800},
+  {id:'ghost_play',  icon:'👻', name:'Geist',               desc:'Ghost-Modus spielen',               reward:300},
+  {id:'brutal_50',   icon:'💥', name:'Brachial',            desc:'50 km auf Brutal',                  reward:2000},
+  {id:'brutal_100',  icon:'🔥', name:'Rasend',              desc:'100 km auf Brutal',                 reward:5000},
+  {id:'ferrari_buy', icon:'🐎', name:'Scuderia',            desc:'Ferrari 296 GTB kaufen',            reward:1500},
+  {id:'all_cars',    icon:'🚗', name:'Sammler',             desc:'Alle Autos besitzen',               reward:5000},
+  {id:'tuning_full', icon:'🔧', name:'Tuning-König',        desc:'Ein Auto komplett ausbauen',        reward:2500},
+  {id:'million',     icon:'💰', name:'Millionär',           desc:'1.000.000 Coins gesamt',            reward:5000},
+  {id:'night_full',  icon:'🌙', name:'Nachtfahrer',         desc:'Eine volle Nacht durchfahren',      reward:800},
+];
+const PRESTIGE=[
+  {km:   250, name:'Bronze', color:'#b87333', bg:'rgba(184,115,51,.25)', bd:'rgba(184,115,51,.6)'},
+  {km:  1000, name:'Silber', color:'#b8c4cc', bg:'rgba(184,196,204,.18)', bd:'rgba(184,196,204,.5)'},
+  {km:  5000, name:'Gold',   color:'#d4af37', bg:'rgba(212,175,55,.25)', bd:'rgba(212,175,55,.6)'},
+  {km: 20000, name:'Platin', color:'#b8d4f0', bg:'rgba(184,212,240,.18)', bd:'rgba(184,212,240,.5)'},
+  {km: 50000, name:'Legende',color:'#c07be0', bg:'rgba(192,123,224,.22)', bd:'rgba(192,123,224,.55)'},
+];
+// Precompute A7 exit sign schedule from ROUTE (exit number starts at 23 = Hamburg-Schnelsen)
+const ROUTE_EXIT_SCHED=(()=>{
+  const list=[];let cs=0,en=23;
+  for(let i=0;i<ROUTE.length;i++){
+    const seg=ROUTE[i];
+    if(seg.type!=='tunnel'){
+      const isJct=/Dreieck|Kreuz|Horster/.test(seg.name);
+      list.push({score:Math.max(0,cs-300),name:seg.name,num:isJct?null:en++,jct:isJct});
+    }
+    cs+=seg.len;
+  }
+  return list;
+})();
 let diff='normal';
 let paused=false;
 let state='menu',score=0,speed=6,scroll=0,spawnTimer=0;
 let bests={chill:0,normal:0,brutal:0,ghost:0};
+let achievements=new Set();
+let totalKm=0;
 let tuning={};         // {carId:{speed:0,handling:0}}
 let carColors={};      // {carId:'#hex'}
 let skidMarks=[];      // [{x,y,a}] — Reifenspuren
@@ -773,8 +870,9 @@ buildTextures(); player=newPlayer(); resize();
 window.addEventListener('resize',()=>{resize();buildTextures();});
 player.x=player.targetX=lanes[1]; player.y=H-carH()*1.7;
 
+let exitSignIdx=0,nightPeaked=false,runAch=[];
 function resetRun(){score=0;speed=DIFF[diff].base;scroll=0;spawnTimer=0;enemies=[];signs=[];segIndex=0;segStart=0;tunnelAmt=0;braking=false;brakeDepth=0;brakeFactor=1;
-  pickups=[];particles=[];floats=[];pickupTimer=160;freeUntil=0;flash=0;skidMarks=[];nightAmt=0;milestoneReached=new Set();nearMissCount=0;
+  pickups=[];particles=[];floats=[];pickupTimer=160;freeUntil=0;flash=0;skidMarks=[];nightAmt=0;milestoneReached=new Set();nearMissCount=0;exitSignIdx=0;nightPeaked=false;runAch=[];
   player=newPlayer();player.x=player.targetX=lanes[1];player.y=H-carH()*1.7;document.getElementById('placeName').textContent=ROUTE[0].name;}
 
 /* ============ input ============ */
@@ -928,14 +1026,45 @@ function drawGuardrail(side){
 }
 function drawSign(s){
   const y=s.y;ctx.save();
-  ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(roadX-12,y-2,roadW+24,10);
-  ctx.fillStyle='#3a3f47';ctx.fillRect(roadX-12,y-4,roadW+24,8);ctx.fillRect(roadX-12,y-26,6,26);ctx.fillRect(roadX+roadW+6,y-26,6,26);
-  const sw=Math.min(roadW*0.78,260),sx=roadX+(roadW-sw)/2,sh=34;
-  rr(ctx,sx,y-30,sw,sh,5);ctx.fillStyle='#0050a0';ctx.fill();
-  ctx.strokeStyle='#fff';ctx.lineWidth=2;rr(ctx,sx+3,y-27,sw-6,sh-6,3);ctx.stroke();
-  rr(ctx,sx+8,y-25,30,sh-10,3);ctx.fillStyle='#0050a0';ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.stroke();
-  ctx.fillStyle='#fff';ctx.textBaseline='middle';ctx.font='700 13px Inter,sans-serif';ctx.fillText('A7',sx+13,y-25+(sh-10)/2);
-  ctx.font='700 14px Inter,sans-serif';ctx.fillText(s.name,sx+46,y-30+sh/2);ctx.restore();
+  if(s.type==='exit'||s.type==='jct'){
+    // Grünes Autobahn-Ausfahrtschild rechts neben der Fahrbahn
+    const rx=roadX+roadW+8;
+    const sw=Math.min(W-rx-4,110), sh=s.num?44:32;
+    const sx=rx, sy=y-sh-4;
+    // Pfahl
+    ctx.fillStyle='#5a6060';ctx.fillRect(sx+sw/2-3,sy+sh,6,18);
+    // Schild-Schatten
+    ctx.fillStyle='rgba(0,0,0,.3)';rr(ctx,sx+2,sy+2,sw,sh,4);ctx.fill();
+    // Schild Hintergrund
+    rr(ctx,sx,sy,sw,sh,4);ctx.fillStyle='#006225';ctx.fill();
+    ctx.strokeStyle='#fff';ctx.lineWidth=1.5;rr(ctx,sx+2,sy+2,sw-4,sh-4,3);ctx.stroke();
+    ctx.fillStyle='#fff';ctx.textBaseline='middle';
+    if(s.num!=null){
+      ctx.font='600 9px Inter,sans-serif';ctx.fillText('Ausfahrt '+s.num,sx+7,sy+11);
+      ctx.font='700 12px Inter,sans-serif';
+      const name=s.name.length>14?s.name.slice(0,13)+'…':s.name;
+      ctx.fillText(name,sx+7,sy+28);
+      // Pfeil
+      ctx.beginPath();ctx.moveTo(sx+sw-10,sy+sh/2-6);ctx.lineTo(sx+sw-6,sy+sh/2);ctx.lineTo(sx+sw-10,sy+sh/2+6);ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
+    }else{
+      // Dreieck / Kreuz — anderes Symbol
+      ctx.font='700 10px Inter,sans-serif';ctx.fillText('⬆',sx+7,sy+10);
+      ctx.font='700 11px Inter,sans-serif';
+      const name=s.name.length>14?s.name.slice(0,13)+'…':s.name;
+      ctx.fillText(name,sx+20,sy+sh/2+1);
+    }
+  }else{
+    // Blaues Gantry-Schild (wie bisher)
+    ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(roadX-12,y-2,roadW+24,10);
+    ctx.fillStyle='#3a3f47';ctx.fillRect(roadX-12,y-4,roadW+24,8);ctx.fillRect(roadX-12,y-26,6,26);ctx.fillRect(roadX+roadW+6,y-26,6,26);
+    const sw=Math.min(roadW*0.78,260),sx=roadX+(roadW-sw)/2,sh=34;
+    rr(ctx,sx,y-30,sw,sh,5);ctx.fillStyle='#0050a0';ctx.fill();
+    ctx.strokeStyle='#fff';ctx.lineWidth=2;rr(ctx,sx+3,y-27,sw-6,sh-6,3);ctx.stroke();
+    rr(ctx,sx+8,y-25,30,sh-10,3);ctx.fillStyle='#0050a0';ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.stroke();
+    ctx.fillStyle='#fff';ctx.textBaseline='middle';ctx.font='700 13px Inter,sans-serif';ctx.fillText('A7',sx+13,y-25+(sh-10)/2);
+    ctx.font='700 14px Inter,sans-serif';ctx.fillText(s.name,sx+46,y-30+sh/2);
+  }
+  ctx.restore();
 }
 function drawPickup(p){
   const x=p.x,y=p.y,w=laneW*0.78,h=carH()*0.9;
@@ -1123,6 +1252,54 @@ document.getElementById('chalClaim').addEventListener('click',()=>{
   refreshMenuStats();
 });
 
+/* ============ achievements ============ */
+let _achTimer=null;
+function unlockAch(id){
+  if(achievements.has(id))return;
+  const a=ACHIEVEMENTS.find(x=>x.id===id);if(!a)return;
+  achievements.add(id);coins+=a.reward;runAch.push(a);Store.save();
+  document.getElementById('achIcon').textContent=a.icon;
+  document.getElementById('achName').textContent=a.name;
+  const t=document.getElementById('achToast');t.classList.add('show');
+  clearTimeout(_achTimer);_achTimer=setTimeout(()=>t.classList.remove('show'),3400);
+}
+function checkRunAchievements(km,runCoins){
+  if(km>0.1)unlockAch('first_run');
+  if(km>13)unlockAch('elbtunnel');
+  if(km>20)unlockAch('hamburg');
+  if(km>100)unlockAch('km100');
+  if(km>250)unlockAch('km250');
+  if(km>500)unlockAch('km500');
+  if(nearMissCount>=10)unlockAch('nearmiss10');
+  if(diff==='ghost')unlockAch('ghost_play');
+  if(diff==='brutal'&&km>50)unlockAch('brutal_50');
+  if(diff==='brutal'&&km>100)unlockAch('brutal_100');
+  if(owned.ferrari296)unlockAch('ferrari_buy');
+  if(CARS.every(c=>owned[c.id]))unlockAch('all_cars');
+  for(const c of CARS){const t=tuning[c.id]||{};if((t.speed||0)>=3&&(t.handling||0)>=3){unlockAch('tuning_full');break;}}
+  if(coins>=1000000)unlockAch('million');
+  // Frisch freigeschalten in Game-Over-Screen anzeigen
+  const oa=document.getElementById('overAch');
+  if(oa){oa.innerHTML='';
+    if(runAch.length){oa.style.display='flex';runAch.forEach(a=>{
+      const d=document.createElement('div');d.style.cssText='display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:#ffd23f;background:rgba(255,210,63,.08);border-radius:8px;padding:5px 10px;';
+      d.textContent=a.icon+' '+a.name+' ✓';oa.appendChild(d);});}
+    else oa.style.display='none';}
+  refreshMenuStats();
+}
+function renderAchievements(){
+  const list=document.getElementById('achList');list.innerHTML='';
+  const done=achievements.size,total=ACHIEVEMENTS.length;
+  document.getElementById('achCount').textContent=done+' / '+total;
+  for(const a of ACHIEVEMENTS){
+    const row=document.createElement('div');row.className='ach-row'+(achievements.has(a.id)?' done':'');
+    row.innerHTML=`<span class="ach-em">${a.icon}</span><div class="ach-info"><div class="ach-nm">${a.name}</div><div class="ach-desc">${a.desc}</div></div><div class="ach-rw">+${a.reward.toLocaleString('de-DE')}</div>`;
+    list.appendChild(row);
+  }
+}
+function openAchievements(){AU.resume();AU.click();renderAchievements();document.getElementById('menu').classList.add('hidden');document.getElementById('achScreen').classList.remove('hidden');}
+function closeAchievements(){AU.click();document.getElementById('achScreen').classList.add('hidden');document.getElementById('menu').classList.remove('hidden');}
+
 /* ============ loop ============ */
 function frame(){
   requestAnimationFrame(frame);
@@ -1185,6 +1362,13 @@ function frame(){
     const _km200=(score/200)%200;
     const _nTarget=_km200<50?0:_km200<80?(_km200-50)/30:_km200<150?1:Math.max(0,1-(_km200-150)/50);
     nightAmt+=(_nTarget-nightAmt)*0.002;
+    if(nightAmt>0.85&&!nightPeaked)nightPeaked=true;
+    if(nightPeaked&&nightAmt<0.15){unlockAch('night_full');nightPeaked=false;}
+    // Autobahn-Ausfahrtschilder (aus ROUTE_EXIT_SCHED)
+    while(exitSignIdx<ROUTE_EXIT_SCHED.length&&score>=ROUTE_EXIT_SCHED[exitSignIdx].score){
+      const es=ROUTE_EXIT_SCHED[exitSignIdx++];
+      signs.push({y:-60,name:es.name,num:es.num,type:es.jct?'jct':'exit'});
+    }
     // Reifenspuren
     if(brakeFactor<0.48&&fc%3===0){const cw=carW(),ch=carH();
       skidMarks.push({x:player.x-cw*0.22,y:player.y+ch*0.37,a:(0.48-brakeFactor)*1.5},{x:player.x+cw*0.22,y:player.y+ch*0.37,a:(0.48-brakeFactor)*1.5});
@@ -1220,7 +1404,9 @@ function crash(){paused=false;state='over';bests[diff]=Math.max(bests[diff]||0,s
   document.getElementById('pauseBtn').classList.remove('on');document.getElementById('ghostHud').classList.remove('on');document.getElementById('pause').classList.add('hidden');
   const coinMul={chill:1,normal:1.75,brutal:3,ghost:25}[diff]||1;
   const earned=Math.floor(score/2*coinMul);coins+=earned;
+  totalKm+=score/200;
   updateDailyChallengeProgress(score/200,earned);
+  checkRunAchievements(score/200,earned);
   Store.save();
   document.getElementById('finalScore').textContent=kmTxt(score);document.getElementById('finalBest').textContent=kmTxt(bests[diff]);
   document.getElementById('earned').textContent='+'+earned.toLocaleString('de-DE')+' Coins';
@@ -1327,12 +1513,19 @@ function renderGarage(){
         row.innerHTML=`<div class="sbar-lbl">${lbl}</div><div class="sbar"><div class="sbar-fill" style="width:${Math.round(Math.min(1,ratio)*100)}%"></div></div>`;
         bars.appendChild(row);
       });info.appendChild(bars);
-      // Farbe wählen
+      // Farbe wählen (Basis + Prestige-Farben)
       const colorRow=document.createElement('div');colorRow.className='color-row';
-      COLOR_PRESETS.forEach(col=>{
-        const sw=document.createElement('button');sw.className='color-swatch'+((carColors[c.id]||c.color)===col?' active':'');
-        sw.style.background=col;sw.title=col;
-        sw.onclick=()=>{carColors[c.id]=col;if(sel===c.id){delete spriteCache['P|'+sel];delete spriteCache['P|hit'];}Store.save();AU.click();renderGarage();};
+      const p=currentPrestige();
+      const unlockedPrstColors=PRESTIGE.filter(t=>totalKm>=t.km).map(t=>t.color);
+      [...COLOR_PRESETS,...PRESTIGE.map(t=>t.color)].forEach((col,idx)=>{
+        const isPrst=idx>=COLOR_PRESETS.length;
+        const locked=isPrst&&!unlockedPrstColors.includes(col);
+        const sw=document.createElement('button');
+        sw.className='color-swatch'+((carColors[c.id]||c.color)===col?' active':'')+(locked?' locked':'');
+        sw.style.background=col;
+        if(isPrst&&locked){const pr=PRESTIGE[idx-COLOR_PRESETS.length];sw.title=pr.name+' ('+pr.km.toLocaleString('de-DE')+' km gesamt)';}
+        else sw.title=col;
+        if(!locked)sw.onclick=()=>{carColors[c.id]=col;if(sel===c.id){delete spriteCache['P|'+sel];delete spriteCache['P|hit'];}Store.save();AU.click();renderGarage();};
         colorRow.appendChild(sw);
       });info.appendChild(colorRow);
       // Tuning
@@ -1436,6 +1629,9 @@ function openAutos(){AU.resume();AU.click();renderAutos();document.getElementByI
 function closeAutos(){AU.click();document.getElementById('autos').classList.add('hidden');refreshMenuStats();document.getElementById('menu').classList.remove('hidden');}
 document.getElementById('autosBack').onclick=closeAutos;
 document.getElementById('shopBack').onclick=closeShop;
+document.getElementById('achBtn').onclick=openAchievements;
+document.getElementById('achBack').onclick=closeAchievements;
+document.getElementById('shopBtn').onclick=openShop;
 Store.load();
 requestAnimationFrame(frame);
 </script>
