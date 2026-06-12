@@ -1161,14 +1161,15 @@ function frame(){
     if(score>=freeUntil && (spawnTimer+=brakeFactor)>=gap && enemies.length<cfg.maxNpc){spawnTimer=0;spawn(false);}
     if(--pickupTimer<=0){pickupTimer=180+(Math.random()*160|0);spawnPickup();}
     const h=carH(), invuln=player.air>0||score<freeUntil;
-    // NPCs fahren immer mit voller speed weiter — beim Bremsen überholen sie den Spieler
-    for(const e of enemies){e.y+=speed*(e.speedMul||1);if(e.baseX!==undefined)e.x=e.baseX+Math.sin(fc*(e.wobFreq||0.02)+(e.wobPhase||0))*(e.wobAmp||0);const eh=h*(e.truck?2.35:1);
+    // Gleicher-Richtungs-Verkehr: NPC fährt mit eigener Geschwindigkeit vorwärts.
+    // Beim Bremsen (eff sinkt) zieht der NPC vor dem Spieler weg und verschwindet oben.
+    for(const e of enemies){e.y+=eff-speed*(e.speedMul||0.5);if(e.baseX!==undefined)e.x=e.baseX+Math.sin(fc*(e.wobFreq||0.02)+(e.wobPhase||0))*(e.wobAmp||0);const eh=h*(e.truck?2.35:1);
       if(diff!=='ghost'&&!invuln&&Math.abs(e.x-player.x)<carW()*0.6&&Math.abs(e.y-player.y)<(eh+h)/2*0.82){crash();return;}
       // Beinahe-Kollision: NPC passiert Spieler mit knappem Abstand
       if(!e.passed&&e.y>player.y+h*0.55){e.passed=true;
         if(!invuln&&Math.abs(e.x-player.x)<carW()*1.55&&Math.abs(e.x-player.x)>=carW()*0.6){
           nearMissCount++;const nb=10+Math.round(score/2200)|0;coins+=nb;Store.save();addFloat('Knapp! +'+nb,'#ff9f1c');}}}
-    enemies=enemies.filter(e=>e.y<H+h*3);
+    enemies=enemies.filter(e=>e.y<H+h*3&&e.y>-h*10);
     for(let i=0;i<enemies.length;i++){for(let j=i+1;j<enemies.length;j++){if(enemies[i].lane!==enemies[j].lane)continue;const hi=h*(enemies[i].truck?2.35:1),hj=h*(enemies[j].truck?2.35:1);const minD=(hi+hj)*0.5+12;const dy=enemies[j].y-enemies[i].y;if(Math.abs(dy)<minD){if(dy>=0)enemies[j].y=enemies[i].y+minD;else enemies[i].y=enemies[j].y+minD;}}}
     for(const p of pickups){p.y+=eff;
       if(!p.done&&player.air<=0&&Math.abs(p.x-player.x)<carW()*0.62&&Math.abs(p.y-player.y)<h*0.7){p.done=true;trigger(p.type);}}
@@ -1201,7 +1202,7 @@ function frame(){
     document.getElementById('speedo').style.textShadow=_kmh<130?'0 0 12px rgba(74,222,128,.5)':_kmh<200?'0 0 12px rgba(251,191,36,.5)':'0 0 12px rgba(248,113,113,.5)';
   }else{
     tunnelAmt+=(-tunnelAmt)*0.04;if(++spawnTimer>=70){spawnTimer=0;spawn(true);}
-    for(const e of enemies){e.y+=speed*(e.speedMul||1);if(e.baseX!==undefined)e.x=e.baseX+Math.sin(fc*(e.wobFreq||0.02)+(e.wobPhase||0))*(e.wobAmp||0);}enemies=enemies.filter(e=>e.y<H+carH()*3);
+    for(const e of enemies){e.y+=speed*(1-(e.speedMul||0.5));if(e.baseX!==undefined)e.x=e.baseX+Math.sin(fc*(e.wobFreq||0.02)+(e.wobPhase||0))*(e.wobAmp||0);}enemies=enemies.filter(e=>e.y<H+carH()*3);
     const ch=carH();for(let i=0;i<enemies.length;i++){for(let j=i+1;j<enemies.length;j++){if(enemies[i].lane!==enemies[j].lane)continue;const hi=ch*(enemies[i].truck?2.35:1),hj=ch*(enemies[j].truck?2.35:1);const minD=(hi+hj)*0.5+12;const dy=enemies[j].y-enemies[i].y;if(Math.abs(dy)<minD){if(dy>=0)enemies[j].y=enemies[i].y+minD;else enemies[i].y=enemies[j].y+minD;}}}
   }
   ctx.clearRect(0,0,W,H);
