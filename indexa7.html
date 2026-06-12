@@ -1064,30 +1064,70 @@ function drawPolizei(){
   const cw=carW(),ch=carH();
   const t=Date.now();const blink=Math.floor(t/100)%2;
   ctx.save();ctx.translate(polizei.x,polizei.y);
-  // Body
-  ctx.fillStyle='#f0f0f4';rr(ctx,-cw/2,-ch/2,cw,ch,6);ctx.fill();
-  ctx.fillStyle='rgba(0,0,0,.1)';ctx.fillRect(-cw/2+2,-ch/2+2,cw-4,ch-4);
-  // Blue stripe + POLIZEI label
-  ctx.fillStyle='#1a3caa';ctx.fillRect(-cw/2,-ch*0.09,cw,ch*0.18);
-  ctx.fillStyle='rgba(255,255,255,.92)';ctx.font='bold 7px Inter,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('POLIZEI',0,0);
-  // Flashing lights on roof (front = top of car)
-  ctx.shadowBlur=18;
-  ctx.fillStyle=blink?'rgba(40,110,255,.98)':'rgba(255,35,35,.98)';
-  ctx.shadowColor=blink?'#2264ff':'#ff2828';
-  ctx.beginPath();ctx.arc(-cw*0.26,-ch*0.42,cw*0.15,0,7);ctx.fill();
-  ctx.fillStyle=blink?'rgba(255,35,35,.98)':'rgba(40,110,255,.98)';
-  ctx.shadowColor=blink?'#ff2828':'#2264ff';
-  ctx.beginPath();ctx.arc(cw*0.26,-ch*0.42,cw*0.15,0,7);ctx.fill();
+
+  // === Karosserie Silber-Weiß ===
+  rr(ctx,-cw/2,-ch/2,cw,ch,7);ctx.fillStyle='#dde2e8';ctx.fill();
+
+  // === Seitlicher Schatten (3D-Tiefe) ===
+  ctx.fillStyle='rgba(0,0,0,.08)';ctx.fillRect(-cw/2+2,-ch/2+2,cw-4,ch-4);
+
+  // === Leuchtgelb-Streifen (RAL-ähnlich, quer über Fahrzeugmitte) ===
+  const sy=-ch*0.10,sh=ch*0.22;
+  ctx.fillStyle='#c8e418';ctx.fillRect(-cw/2,sy,cw,sh);
+  // Dunkle Konturlinien oben/unten am Streifen
+  ctx.fillStyle='rgba(0,0,0,.18)';ctx.fillRect(-cw/2,sy,cw,1.5);ctx.fillRect(-cw/2,sy+sh-1.5,cw,1.5);
+
+  // === "POLIZEI" Schriftzug in Dunkelblau auf Leuchtgelb ===
+  ctx.fillStyle='#001a80';ctx.font='900 7px Inter,sans-serif';
+  ctx.textAlign='center';ctx.textBaseline='middle';ctx.letterSpacing='0.5px';
+  ctx.fillText('POLIZEI',0,sy+sh/2);
+
+  // === Frontscheibe (oben = Fahrtrichtung) ===
+  rr(ctx,-cw*0.37,-ch/2+ch*0.07,cw*0.74,ch*0.20,3);ctx.fillStyle='rgba(50,70,120,.68)';ctx.fill();
+  // Spiegelung
+  ctx.fillStyle='rgba(255,255,255,.13)';ctx.fillRect(-cw*0.34,-ch/2+ch*0.08,cw*0.3,ch*0.17);
+
+  // === Heckscheibe (unten) ===
+  rr(ctx,-cw*0.34,ch/2-ch*0.27,cw*0.68,ch*0.19,3);ctx.fillStyle='rgba(50,70,120,.55)';ctx.fill();
+
+  // === Stoßfänger Heck + Kennzeichen ===
+  ctx.fillStyle='#c0c4cc';ctx.fillRect(-cw*0.42,ch/2-ch*0.10,cw*0.84,ch*0.08);
+  ctx.fillStyle='#f5f5e8';ctx.fillRect(-cw*0.22,ch/2-ch*0.09,cw*0.44,ch*0.06);
+
+  // === Dachbalken (Lichtbalken) über gesamte Dachbreite ===
+  const lbw=cw*0.80,lbh=ch*0.075,lby=-ch/2+ch*0.015;
+  rr(ctx,-lbw/2,lby,lbw,lbh,3);ctx.fillStyle='#1a2a80';ctx.fill();
+  // Balkengehäuse Glanz
+  ctx.fillStyle='rgba(255,255,255,.18)';ctx.fillRect(-lbw/2+2,lby+1,lbw-4,lbh*0.4);
+
+  // Blaulicht L (alternierend blau / aus)
+  ctx.shadowBlur=20;ctx.shadowColor='#2264ff';
+  ctx.fillStyle=blink?'rgba(60,120,255,1)':'rgba(30,50,110,.5)';
+  ctx.beginPath();ctx.arc(-lbw*0.30,lby+lbh/2,lbh*0.58,0,7);ctx.fill();
+  // Blaulicht R (gegenläufig)
+  ctx.fillStyle=blink?'rgba(30,50,110,.5)':'rgba(60,120,255,1)';
+  ctx.beginPath();ctx.arc(lbw*0.30,lby+lbh/2,lbh*0.58,0,7);ctx.fill();
+  // Mitte: gelbes Warnlicht
+  ctx.shadowColor='#e8c400';
+  ctx.fillStyle='rgba(232,196,0,.85)';
+  ctx.beginPath();ctx.arc(0,lby+lbh/2,lbh*0.42,0,7);ctx.fill();
   ctx.shadowBlur=0;
+
+  // === Spiegel ===
+  ctx.fillStyle='#b0b4bc';
+  ctx.fillRect(-cw/2-3,sy-2,4,7);ctx.fillRect(cw/2-1,sy-2,4,7);
+
   ctx.restore();
-  // Warnanzeige: Fortschrittsbalken am unteren Bildschirmrand
+
+  // === Warnanzeige: Fortschrittsbalken am unteren Bildschirmrand ===
   if(polizeiWarning>0){
     const ratio=Math.min(1,polizeiWarning/220);
-    const bw=roadW*ratio,bh=5,by=H-bh;
+    const bw=roadW*ratio,bh=6,by=H-bh;
+    const blink2=Math.floor(t/150)%2;
     ctx.save();
-    ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(roadX,by,roadW,bh);
+    ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(roadX,by,roadW,bh);
     const grad=ctx.createLinearGradient(roadX,0,roadX+bw,0);
-    grad.addColorStop(0,blink?'#2264ff':'#cc1111');grad.addColorStop(1,blink?'#cc1111':'#2264ff');
+    grad.addColorStop(0,'#1a50ff');grad.addColorStop(0.5,blink2?'#c8e418':'#ff2020');grad.addColorStop(1,'#ff2020');
     ctx.fillStyle=grad;ctx.fillRect(roadX,by,bw,bh);
     ctx.restore();
   }
