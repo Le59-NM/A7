@@ -1211,7 +1211,7 @@ function frame(){
 }
 function crash(){paused=false;state='over';bests[diff]=Math.max(bests[diff]||0,score);AU.engineStop();AU.crash();
   document.getElementById('pauseBtn').classList.remove('on');document.getElementById('ghostHud').classList.remove('on');document.getElementById('pause').classList.add('hidden');
-  const coinMul={chill:1,normal:1.75,brutal:3,ghost:1}[diff]||1;
+  const coinMul={chill:1,normal:1.75,brutal:3,ghost:25}[diff]||1;
   const earned=Math.floor(score/2*coinMul);coins+=earned;
   updateDailyChallengeProgress(score/200,earned);
   Store.save();
