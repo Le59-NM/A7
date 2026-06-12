@@ -154,6 +154,16 @@
   .color-swatch.active{border-color:#ffd23f;transform:scale(1.22);}
   .color-swatch:not(.active){border-color:rgba(255,255,255,.18);}
   .milestone-badge{position:absolute;top:calc(50% - 30px);left:50%;transform:translateX(-50%);background:rgba(255,210,63,.92);color:#1a1200;font-size:13px;font-weight:900;letter-spacing:.1em;border-radius:20px;padding:7px 18px;box-shadow:0 4px 18px rgba(0,0,0,.5);pointer-events:none;display:none;}
+  /* Polizei warning */
+  #polWarn{position:absolute;top:calc(50px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:75;background:rgba(0,0,0,.82);border:2px solid #f03030;border-radius:14px;padding:8px 20px;font-size:11px;font-weight:900;letter-spacing:.22em;text-transform:uppercase;color:#ff4040;pointer-events:none;display:none;text-align:center;}
+  #polWarn.on{display:block;animation:polFlash 0.5s infinite alternate;}
+  @keyframes polFlash{from{border-color:#2060ff;color:#4080ff;}to{border-color:#f03030;color:#ff4040;}}
+  /* Run stats */
+  #runStats{display:none;flex-direction:column;gap:5px;width:100%;max-width:300px;background:rgba(255,255,255,.06);border-radius:12px;padding:10px 14px;}
+  #runStats.on{display:flex;}
+  .rstat-row{display:flex;justify-content:space-between;align-items:center;}
+  .rstat-l{font-size:9px;letter-spacing:.18em;color:#8a9e88;text-transform:uppercase;}
+  .rstat-v{font-size:13px;font-weight:800;color:#e8eee4;}
   /* Achievement toast */
   #achToast{position:absolute;top:calc(56px + env(safe-area-inset-top));left:50%;transform:translateX(-50%) translateY(-10px);z-index:80;background:rgba(10,16,8,.94);border:1.5px solid #ffd23f;border-radius:14px;padding:10px 18px;display:flex;align-items:center;gap:10px;opacity:0;transition:opacity .35s,transform .35s;pointer-events:none;white-space:nowrap;max-width:calc(100vw - 32px);}
   #achToast.show{opacity:1;transform:translateX(-50%) translateY(0);}
@@ -200,6 +210,7 @@
   <div class="speedo" id="speedoBox"><span class="num" id="speedo">0</span><span class="unit">km/h</span></div>
   <button id="brakeBtn" aria-label="Bremsen">BREMSE</button>
   <button id="selfDestructBtn" aria-label="Selbstzerstörung" title="Selbstzerstörung"></button>
+  <div id="polWarn">POLIZEI</div>
 
   <div class="screen" id="menu">
     <div class="veil"></div>
@@ -263,6 +274,7 @@
       </div>
       <div class="verdict" id="verdict">Geht besser.</div>
       <div class="earned" id="earned">+0 Coins</div>
+      <div id="runStats"></div>
       <div id="overAch" style="display:none;flex-direction:column;gap:4px;width:100%;max-width:300px;"></div>
       <div class="btnrow">
         <button class="btn ghost" id="toMenu">Menü</button>
@@ -340,12 +352,13 @@ const cv=document.getElementById('game'), ctx=cv.getContext('2d');
 /* ============ Audio (Web Audio, synthetisiert) ============ */
 const AU=(()=>{
   let ac,master,delay,fb,wet,noiseBuf,engine=null,muted=false;
+  let carEp={baseF:78,bodyF:150,lfoF:80,noise:0.05};
   function ensure(){
     if(ac)return;
     ac=new (window.AudioContext||window.webkitAudioContext)();
     master=ac.createGain();master.gain.value=0.9;master.connect(ac.destination);
-    delay=ac.createDelay();delay.delayTime.value=0.19;
-    fb=ac.createGain();fb.gain.value=0.34;
+    delay=ac.createDelay(1.0);delay.delayTime.value=0.10;
+    fb=ac.createGain();fb.gain.value=0.20;
     wet=ac.createGain();wet.gain.value=0;
     delay.connect(fb);fb.connect(delay);delay.connect(wet);wet.connect(master);
     noiseBuf=ac.createBuffer(1,ac.sampleRate,ac.sampleRate);
@@ -370,35 +383,46 @@ const AU=(()=>{
     resume(){ensure();if(ac.state==='suspended')ac.resume();},
     setMuted(m){ensure();muted=m;master.gain.setTargetAtTime(m?0:0.9,ac.currentTime,0.02);},
     isMuted(){return muted;},
-    engineStart(){ensure();if(engine)return;const t=ac.currentTime;
-      const o1=ac.createOscillator();o1.type='sawtooth';o1.frequency.value=80;
-      const o2=ac.createOscillator();o2.type='square';o2.frequency.value=160;
-      const sub=ac.createOscillator();sub.type='sine';sub.frequency.value=40;
+    setCarProfile(ep){if(ep)carEp=ep;},
+    engineStart(ep){ensure();if(engine)return;if(ep)carEp=ep;const t=ac.currentTime;
+      const o1=ac.createOscillator();o1.type='sawtooth';o1.frequency.value=carEp.baseF;
+      const o2=ac.createOscillator();o2.type='square';o2.frequency.value=carEp.baseF*2;
+      const sub=ac.createOscillator();sub.type='sine';sub.frequency.value=carEp.baseF*0.5;
       const mix=ac.createGain();mix.gain.value=0.5;o1.connect(mix);
       const g2=ac.createGain();g2.gain.value=0.28;o2.connect(g2);g2.connect(mix);
       const gs=ac.createGain();gs.gain.value=0.5;sub.connect(gs);gs.connect(mix);
-      const ns=ac.createBufferSource();ns.buffer=noiseBuf;ns.loop=true;        // Verbrennungs-Rauschen
+      const ns=ac.createBufferSource();ns.buffer=noiseBuf;ns.loop=true;
       const nbp=ac.createBiquadFilter();nbp.type='bandpass';nbp.frequency.value=950;nbp.Q.value=1.1;
-      const ng=ac.createGain();ng.gain.value=0.05;ns.connect(nbp);nbp.connect(ng);ng.connect(mix);
+      const ng=ac.createGain();ng.gain.value=carEp.noise;ns.connect(nbp);nbp.connect(ng);ng.connect(mix);
       const lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.value=850;lp.Q.value=1.2;mix.connect(lp);
-      const body=ac.createBiquadFilter();body.type='bandpass';body.frequency.value=150;body.Q.value=5;  // Auspuff/Body
+      const body=ac.createBiquadFilter();body.type='bandpass';body.frequency.value=carEp.bodyF;body.Q.value=5;
       const bodyG=ac.createGain();bodyG.gain.value=0.7;mix.connect(body);body.connect(bodyG);
-      const throb=ac.createGain();throb.gain.value=0.5;lp.connect(throb);bodyG.connect(throb);            // Zündungs-Throb (AM)
-      const lfo=ac.createOscillator();lfo.type='sawtooth';lfo.frequency.value=80;
+      const throb=ac.createGain();throb.gain.value=0.5;lp.connect(throb);bodyG.connect(throb);
+      const lfo=ac.createOscillator();lfo.type='sawtooth';lfo.frequency.value=carEp.lfoF;
       const lfoG=ac.createGain();lfoG.gain.value=0.5;lfo.connect(lfoG);lfoG.connect(throb.gain);
       const em=ac.createGain();em.gain.value=0.0001;throb.connect(em);em.connect(master);em.connect(delay);
       o1.start();o2.start();sub.start();ns.start();lfo.start();em.gain.setTargetAtTime(0.08,t,0.3);
-      engine={o1,o2,sub,ns,lfo,lp,em};
+      engine={o1,o2,sub,ns,lfo,lp,body,ng,em};
     },
     engineStop(){if(!engine)return;const e=engine;engine=null;e.em.gain.setTargetAtTime(0.0001,ac.currentTime,0.12);
       setTimeout(()=>{try{e.o1.stop();e.o2.stop();e.sub.stop();e.ns.stop();e.lfo.stop();}catch(_){}},450);},
     update(speed,tun){if(!ac)return;
       if(engine){const t=ac.currentTime;const sp=Math.max(5,speed);const x=(sp-5)/1.2;const frac=x-Math.floor(x);
-        const f=78+frac*94;                         // Gänge: Drehzahl steigt, fällt beim Hochschalten
+        const f=carEp.baseF+frac*(carEp.baseF*1.2);
         engine.o1.frequency.setTargetAtTime(f,t,0.05);engine.o2.frequency.setTargetAtTime(f*2,t,0.05);
         engine.sub.frequency.setTargetAtTime(f*0.5,t,0.05);engine.lfo.frequency.setTargetAtTime(f,t,0.04);
+        engine.body.frequency.setTargetAtTime(carEp.bodyF,t,0.08);
+        engine.ng.gain.setTargetAtTime(carEp.noise*(0.7+sp*0.018),t,0.1);
         engine.lp.frequency.setTargetAtTime(Math.max(320,560+sp*120-tun*340),t,0.1);}
-      wet.gain.setTargetAtTime(tun*0.34,ac.currentTime,0.1);},
+      const ct=ac.currentTime;
+      wet.gain.setTargetAtTime(tun*0.54,ct,0.1);
+      delay.delayTime.setTargetAtTime(0.10+tun*0.20,ct,0.15);
+      fb.gain.setTargetAtTime(0.20+tun*0.30,ct,0.15);},
+    siren(){ensure();const t=ac.currentTime;
+      for(let i=0;i<3;i++){const o=ac.createOscillator();o.type='sawtooth';
+        o.frequency.setValueAtTime(880,t+i*0.22);o.frequency.linearRampToValueAtTime(1200,t+i*0.22+0.18);
+        const g=ac.createGain();g.gain.setValueAtTime(0.18,t+i*0.22);g.gain.exponentialRampToValueAtTime(0.0001,t+i*0.22+0.22);
+        o.connect(g);g.connect(master);o.start(t+i*0.22);o.stop(t+i*0.22+0.24);}},
     lane(){noise(0.14,'highpass',1200,3200,0.16);},
     jump(){tone(300,900,0.5,'triangle',0.22,true);noise(0.3,'bandpass',800,1700,0.1);},
     land(){tone(180,60,0.22,'sine',0.28);noise(0.18,'lowpass',500,120,0.22);},
@@ -597,31 +621,38 @@ const CARS=[
   {id:'fiesta', name:'Ford Fiesta 1.1 Trend', price:0, kind:'hatch', color:'#edeef0',
    displacement:1084, power:55, ps:75, cylinders:3,
    maxKmh:170, rampMul:0.70, handling:0.19,
-   desc:'1.1 EcoBoost · 3-Zyl.'},
+   desc:'1.1 EcoBoost · 3-Zyl.',
+   ep:{baseF:105,bodyF:185,lfoF:98,noise:0.072}},
   {id:'golfgti', name:'VW Golf GTI', price:25000, kind:'hatch', color:'#c8282e',
    displacement:1984, power:195, ps:265, cylinders:4,
    maxKmh:250, rampMul:1.05, handling:0.27,
-   desc:'2.0 TSI · 7G-DSG · 370 Nm · FWD'},
+   desc:'2.0 TSI · 7G-DSG · 370 Nm · FWD',
+   ep:{baseF:88,bodyF:165,lfoF:85,noise:0.058}},
   {id:'a200', name:'Mercedes A 200', price:35000, kind:'hatch', color:'#c2c5cc',
    displacement:1332, power:120, ps:163, cylinders:4,
    maxKmh:225, rampMul:1.10, handling:0.26,
-   desc:'1.3T 7G-DCT · Mild Hybrid · 270 Nm'},
+   desc:'1.3T 7G-DCT · Mild Hybrid · 270 Nm',
+   ep:{baseF:84,bodyF:155,lfoF:82,noise:0.050}},
   {id:'bmwm5', name:'BMW M5 G90', price:120000, kind:'sedan', color:'#0d1018',
    displacement:4395, power:535, ps:727, cylinders:8,
    maxKmh:305, rampMul:1.65, handling:0.29,
-   desc:'4.4 V8 Biturbo · 8G M Steptronic · 1.000 Nm · PHEV 727 PS · M xDrive'},
+   desc:'4.4 V8 Biturbo · 8G M Steptronic · 1.000 Nm · PHEV 727 PS · M xDrive',
+   ep:{baseF:60,bodyF:105,lfoF:58,noise:0.036}},
   {id:'amggt63', name:'Mercedes AMG GT 63', price:185000, kind:'sport', color:'#0c0e11', stripe:'#1a1f24',
    displacement:3982, power:450, ps:612, cylinders:8,
    maxKmh:317, rampMul:1.90, handling:0.32,
-   desc:'3.9L V8 · AMG MCT 9G · 850 Nm · AWD'},
+   desc:'3.9L V8 · AMG MCT 9G · 850 Nm · AWD',
+   ep:{baseF:56,bodyF:98,lfoF:55,noise:0.032}},
   {id:'porsche911ts', name:'Porsche 911 Turbo S', price:250000, kind:'sport', color:'#9aa4ae',
    displacement:3745, power:478, ps:650, cylinders:6,
    maxKmh:330, rampMul:2.20, handling:0.38,
-   desc:'3.8 Flat-6 Biturbo · 8G PDK · 800 Nm · AWD'},
+   desc:'3.8 Flat-6 Biturbo · 8G PDK · 800 Nm · AWD',
+   ep:{baseF:96,bodyF:188,lfoF:93,noise:0.062}},
   {id:'ferrari296', name:'Ferrari 296 GTB', price:460000, kind:'sport', color:'#cc0000',
    displacement:2992, power:648, ps:880, cylinders:6,
    maxKmh:330, rampMul:2.40, handling:0.40,
-   desc:'3.0L V6 120° Twin Turbo · 8G F1-DCT · 755 Nm · PHEV 880 PS'},
+   desc:'3.0L V6 120° Twin Turbo · 8G F1-DCT · 755 Nm · PHEV 880 PS',
+   ep:{baseF:102,bodyF:205,lfoF:98,noise:0.060}},
 ];
 function carDef(id){
   const base=CARS.find(c=>c.id===id)||CARS[0];
@@ -870,8 +901,15 @@ window.addEventListener('resize',()=>{resize();buildTextures();});
 player.x=player.targetX=lanes[1]; player.y=H-carH()*1.7;
 
 let nightPeaked=false,runAch=[];
+let construction={active:false,endScore:0,nextAt:0};
+let polizei=null,polizeiNextAt=0,polizeiWarning=0;
+let maxKmh=0,runStartTime=0;
 function resetRun(){score=0;speed=DIFF[diff].base;scroll=0;spawnTimer=0;enemies=[];signs=[];segIndex=0;segStart=0;tunnelAmt=0;braking=false;brakeDepth=0;brakeFactor=1;
   pickups=[];particles=[];floats=[];pickupTimer=160;freeUntil=0;flash=0;skidMarks=[];nightAmt=0;milestoneReached=new Set();nearMissCount=0;nightPeaked=false;runAch=[];
+  construction={active:false,endScore:0,nextAt:Math.round((20+Math.random()*20)*200)};
+  polizei=null;polizeiNextAt=Math.round((35+Math.random()*20)*200);polizeiWarning=0;
+  maxKmh=0;runStartTime=Date.now();
+  document.getElementById('polWarn').classList.remove('on');
   player=newPlayer();player.x=player.targetX=lanes[1];player.y=H-carH()*1.7;document.getElementById('placeName').textContent=ROUTE[0].name;}
 
 /* ============ input ============ */
@@ -1023,8 +1061,65 @@ function drawGuardrail(side){
     ctx.fillStyle='rgba(255,255,255,0.14)';ctx.fillRect(x-1,yy,2,7); // Glanz
   }
 }
+function drawConstruction(){
+  if(!construction.active)return;
+  const coneH=carH()*0.55,coneW=coneH*0.42;
+  // Striped barrier across lanes 0-1
+  const bx=roadX,bw=laneW*2,by=player.y-H*0.15;
+  ctx.save();
+  ctx.fillStyle='#f5a623';
+  for(let i=0;i<Math.ceil(bw/18);i++){
+    if(i%2===0){ctx.fillRect(bx+i*18,by-5,18,10);}
+  }
+  ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(bx,by-5,bw,10);
+  for(let i=0;i<Math.ceil(bw/18);i++){
+    ctx.fillStyle=i%2===0?'#f5a623':'#fff';
+    ctx.fillRect(bx+i*18+1,by-4,16,8);
+  }
+  // Cones along left shoulder and lane border
+  const coneXs=[roadX-coneW*0.5, roadX+laneW-coneW*0.5, roadX+laneW*2-coneW*0.5];
+  for(const cx of coneXs){
+    for(let r=0;r<5;r++){
+      const cy=player.y-H*0.05+r*(coneH*1.6);
+      ctx.beginPath();ctx.moveTo(cx+coneW/2,cy-coneH/2);ctx.lineTo(cx,cy+coneH/2);ctx.lineTo(cx+coneW,cy+coneH/2);ctx.closePath();
+      ctx.fillStyle='#f5a623';ctx.fill();
+      ctx.fillStyle='#fff';ctx.fillRect(cx+coneW*0.2,cy,coneW*0.6,coneH*0.18);
+    }
+  }
+  ctx.restore();
+}
+function drawPolizei(){
+  if(!polizei)return;
+  const cw=carW(),ch=carH();
+  ctx.save();ctx.translate(polizei.x,polizei.y);
+  // White sedan body
+  ctx.fillStyle='#f0f0f4';rr(ctx,-cw/2,-ch/2,cw,ch,6);ctx.fill();
+  ctx.fillStyle='rgba(0,0,0,.12)';ctx.fillRect(-cw/2+2,-ch/2+2,cw-4,ch-4);
+  ctx.fillStyle='#2244aa';ctx.fillRect(-cw/2,-ch*0.08,cw,ch*0.16);
+  ctx.fillStyle='rgba(255,255,255,.9)';ctx.font='bold 7px Inter,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('POLIZEI',0,0);
+  // Flashing lights
+  const t=Date.now();const blink=Math.floor(t/120)%2;
+  ctx.shadowBlur=14;
+  ctx.fillStyle=blink?'rgba(40,100,255,.95)':'rgba(255,40,40,.95)';
+  ctx.shadowColor=blink?'#2264ff':'#ff2828';
+  ctx.beginPath();ctx.arc(-cw*0.28,-ch*0.44,cw*0.14,0,7);ctx.fill();
+  ctx.fillStyle=blink?'rgba(255,40,40,.95)':'rgba(40,100,255,.95)';
+  ctx.shadowColor=blink?'#ff2828':'#2264ff';
+  ctx.beginPath();ctx.arc(cw*0.28,-ch*0.44,cw*0.14,0,7);ctx.fill();
+  ctx.shadowBlur=0;
+  ctx.restore();
+}
 function drawSign(s){
   const y=s.y;ctx.save();
+  if(s.type==='warn'){
+    // Orange/yellow Baustellen-Vorankündigung
+    const sw=Math.min(roadW*0.7,220),sx=roadX+(roadW-sw)/2,sh=28;
+    ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(sx+2,y-22+2,sw,sh);
+    rr(ctx,sx,y-22,sw,sh,5);ctx.fillStyle='#f5a623';ctx.fill();
+    ctx.fillStyle='#1a1200';ctx.font='700 12px Inter,sans-serif';ctx.textBaseline='middle';ctx.textAlign='center';
+    ctx.fillText('BAUSTELLE ' + (s.name||''),sx+sw/2,y-22+sh/2);
+    ctx.restore();return;
+  }
   ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(roadX-12,y-2,roadW+24,10);
   ctx.fillStyle='#3a3f47';ctx.fillRect(roadX-12,y-4,roadW+24,8);ctx.fillRect(roadX-12,y-26,6,26);ctx.fillRect(roadX+roadW+6,y-26,6,26);
   const sw=Math.min(roadW*0.78,260),sx=roadX+(roadW-sw)/2,sh=34;
@@ -1344,9 +1439,38 @@ function frame(){
     }
     document.getElementById('score').textContent=kmTxt(score);document.getElementById('best').textContent=kmTxt(bests[diff]||0);
     const _kmh=Math.round(eff*18);
+    if(_kmh>maxKmh)maxKmh=_kmh;
     document.getElementById('speedo').textContent=_kmh;
     document.getElementById('speedo').style.color=_kmh<130?'#4ade80':_kmh<200?'#fbbf24':'#f87171';
     document.getElementById('speedo').style.textShadow=_kmh<130?'0 0 12px rgba(74,222,128,.5)':_kmh<200?'0 0 12px rgba(251,191,36,.5)':'0 0 12px rgba(248,113,113,.5)';
+    // Baustellen
+    if(!construction.active&&score>=construction.nextAt){
+      construction.active=true;construction.endScore=score+Math.round((2+Math.random()*3)*200);
+      signs.push({y:-30,name:'ahead',type:'warn'});
+    }
+    if(construction.active&&score>=construction.endScore){
+      construction.active=false;construction.nextAt=score+Math.round((25+Math.random()*25)*200);
+    }
+    if(construction.active){
+      // push NPCs out of blocked lanes 0-1
+      for(const e of enemies){if((e.lane===0||e.lane===1)&&e.y<player.y-carH()*3){e.lane=2;e.x=lanes[2];e.baseX=lanes[2];}}
+    }
+    // Polizei
+    if(!polizei&&score>=polizeiNextAt){
+      polizei={x:lanes[1],y:-carH()*2,lane:1,speedMul:0.96};
+      AU.siren();document.getElementById('polWarn').classList.add('on');
+    }
+    if(polizei){
+      polizei.y+=eff-speed*polizei.speedMul+0.28;
+      if(polizei.y>H+carH()*2){polizei=null;polizeiWarning=0;polizeiNextAt=score+Math.round((40+Math.random()*30)*200);document.getElementById('polWarn').classList.remove('on');}
+      else if(diff!=='ghost'){
+        const ph=carH();
+        if(Math.abs(polizei.x-player.x)<carW()*0.7&&Math.abs(polizei.y-player.y)<ph*0.9){crash();return;}
+        if(Math.abs(polizei.x-player.x)<carW()*2&&polizei.y>player.y-ph*4&&polizei.y<player.y+ph){
+          polizeiWarning++;if(polizeiWarning>240){addFloat('Erwischt!','#ff4040');crash();return;}
+        }else{if(polizeiWarning>0)polizeiWarning=Math.max(0,polizeiWarning-1);}
+      }
+    }
   }else{
     tunnelAmt+=(-tunnelAmt)*0.04;if(++spawnTimer>=70){spawnTimer=0;spawn(true);}
     for(const e of enemies){e.y+=speed*(1-(e.speedMul||0.5));if(e.baseX!==undefined)e.x=e.baseX+Math.sin(fc*(e.wobFreq||0.02)+(e.wobPhase||0))*(e.wobAmp||0);}enemies=enemies.filter(e=>e.y<H+carH()*3);
@@ -1354,9 +1478,11 @@ function frame(){
   }
   ctx.clearRect(0,0,W,H);
   drawWorld();
+  drawConstruction();
   for(const s of signs)drawSign(s);
   for(const p of pickups)drawPickup(p);
   for(const e of enemies)blitVehicle(e);
+  drawPolizei();
   drawPlayerCar();
   drawParticles();
   drawFloats();
@@ -1365,6 +1491,7 @@ function frame(){
 }
 function crash(){paused=false;state='over';bests[diff]=Math.max(bests[diff]||0,score);AU.engineStop();AU.crash();
   document.getElementById('pauseBtn').classList.remove('on');document.getElementById('ghostHud').classList.remove('on');document.getElementById('pause').classList.add('hidden');
+  document.getElementById('polWarn').classList.remove('on');polizei=null;polizeiWarning=0;
   const coinMul={chill:1,normal:1.75,brutal:3,ghost:25}[diff]||1;
   const earned=Math.floor(score/2*coinMul);coins+=earned;
   totalKm+=score/200;
@@ -1372,6 +1499,11 @@ function crash(){paused=false;state='over';bests[diff]=Math.max(bests[diff]||0,s
   checkRunAchievements(score/200,earned);
   Store.save();
   document.getElementById('finalScore').textContent=kmTxt(score);document.getElementById('finalBest').textContent=kmTxt(bests[diff]);
+  const runSecs=Math.max(1,Math.round((Date.now()-runStartTime)/1000));
+  const avgKmh=Math.round((score/200)/(runSecs/3600));
+  const rs=document.getElementById('runStats');
+  rs.innerHTML=`<div class="rstat-row"><span class="rstat-l">Top-Speed</span><span class="rstat-v">${maxKmh} km/h</span></div><div class="rstat-row"><span class="rstat-l">Beinahe</span><span class="rstat-v">${nearMissCount}×</span></div><div class="rstat-row"><span class="rstat-l">Ø-Tempo</span><span class="rstat-v">${avgKmh} km/h</span></div>`;
+  rs.classList.add('on');
   document.getElementById('earned').textContent='+'+earned.toLocaleString('de-DE')+' Coins';
   const km=score/200;let v='Auf dem Standstreifen gelandet.';
   if(km>9)v='Othmarschen. Elbtunnel voraus!';
@@ -1388,7 +1520,7 @@ function crash(){paused=false;state='over';bests[diff]=Math.max(bests[diff]||0,s
   if(km>803)v='Grenztunnel Füssen erreicht – absolut legendär!';
   document.getElementById('verdict').textContent=v;
   document.getElementById('hud').classList.remove('on');document.getElementById('place').classList.remove('on');document.getElementById('speedoBox').classList.remove('on');document.getElementById('brakeBtn').classList.remove('on');document.getElementById('selfDestructBtn').classList.remove('on');braking=false;brakeDepth=0;brakeFactor=1;document.getElementById('over').classList.remove('hidden');}
-function startGame(){AU.resume();AU.click();resetRun();state='play';paused=false;AU.engineStart();document.getElementById('menu').classList.add('hidden');document.getElementById('over').classList.add('hidden');document.getElementById('pause').classList.add('hidden');document.getElementById('hud').classList.add('on');document.getElementById('place').classList.add('on');document.getElementById('speedoBox').classList.add('on');document.getElementById('pauseBtn').classList.add('on');document.getElementById('ghostHud').classList.toggle('on',diff==='ghost');document.getElementById('brakeBtn').classList.add('on');document.getElementById('selfDestructBtn').classList.toggle('on',diff==='ghost');}
+function startGame(){AU.resume();AU.click();resetRun();state='play';paused=false;document.getElementById('runStats').classList.remove('on');AU.engineStart(carDef(sel).ep);document.getElementById('menu').classList.add('hidden');document.getElementById('over').classList.add('hidden');document.getElementById('pause').classList.add('hidden');document.getElementById('hud').classList.add('on');document.getElementById('place').classList.add('on');document.getElementById('speedoBox').classList.add('on');document.getElementById('pauseBtn').classList.add('on');document.getElementById('ghostHud').classList.toggle('on',diff==='ghost');document.getElementById('brakeBtn').classList.add('on');document.getElementById('selfDestructBtn').classList.toggle('on',diff==='ghost');}
 function toMenu(){paused=false;AU.engineStop();AU.click();state='menu';enemies=[];signs=[];pickups=[];particles=[];floats=[];tunnelAmt=0;player=newPlayer();player.x=player.targetX=lanes[1];player.y=H-carH()*1.7;goToPage(0,false);refreshMenuStats();document.getElementById('speedoBox').classList.remove('on');document.getElementById('over').classList.add('hidden');document.getElementById('pause').classList.add('hidden');document.getElementById('pauseBtn').classList.remove('on');document.getElementById('ghostHud').classList.remove('on');document.getElementById('brakeBtn').classList.remove('on');document.getElementById('selfDestructBtn').classList.remove('on');braking=false;brakeDepth=0;brakeFactor=1;document.getElementById('menu').classList.remove('hidden');}
 function openShop(){AU.resume();AU.click();renderShop();document.getElementById('menu').classList.add('hidden');document.getElementById('over').classList.add('hidden');document.getElementById('shop').classList.remove('hidden');}
 function closeShop(){AU.click();document.getElementById('shop').classList.add('hidden');refreshMenuStats();document.getElementById('menu').classList.remove('hidden');}
@@ -1428,7 +1560,7 @@ function pauseGame(){
 }
 function resumeGame(){
   paused=false;
-  if(state==='play')AU.engineStart();
+  if(state==='play')AU.engineStart(carDef(sel).ep);
   document.getElementById('pause').classList.add('hidden');
   document.getElementById('pauseBtn').classList.add('on');
 }
