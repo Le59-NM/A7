@@ -971,10 +971,10 @@ function spawn(ambient){
 
 /* ============ Power-ups ============ */
 function spawnPickup(){
-  const r=Math.random(); const type = r<0.32?'ramp' : r<0.50?'rocket' : r<0.68?'coins' : r<0.84?'nitro' : 'pothole';
+  const r=Math.random(); const type = r<0.30?'ramp' : r<0.47?'rocket' : r<0.63?'coins' : r<0.77?'nitro' : r<0.88?'pothole' : 'oil';
   const lane=Math.floor(Math.random()*LANES);
   const p={type,lane,x:lanes[lane],y:-carH()*1.6};
-  if(type==='pothole'){p.shape=[];for(let i=0;i<11;i++)p.shape.push(0.66+Math.random()*0.34);}
+  if(type==='pothole'||type==='oil'){p.shape=[];for(let i=0;i<13;i++)p.shape.push(0.6+Math.random()*0.4);}
   pickups.push(p);
 }
 function addFloat(text,col){floats.push({x:player.x,y:player.y-carH()*0.9,text,col,life:70});}
@@ -1015,6 +1015,16 @@ function trigger(type){
     if(player.air>0)return;
     player.ctrl=Math.round((1+Math.random())*60);
     addFloat('KONTROLLE!','#ff5b5b'); AU.pothole();
+  }else if(type==='oil'){
+    if(player.air>0)return;
+    const canL=player.lane>0, canR=player.lane<LANES-1;
+    const dir=canL&&canR?(Math.random()<0.5?-1:1):canL?-1:canR?1:0;
+    if(dir!==0){
+      player.lane=player.lane+dir;
+      player.targetX=lanes[player.lane];
+      player.wob=0.22*dir;
+    }
+    addFloat('ÖLSPUR!','#80ffcc'); AU.pothole();
   }
 }
 
@@ -1227,6 +1237,24 @@ function drawPickup(p){
     ctx.lineTo(-w*0.02, bh*0.04);  // innerer Knick
     ctx.closePath();ctx.fill();
     ctx.shadowBlur=0;
+    ctx.restore();
+  }else if(p.type==='oil'){
+    ctx.save();ctx.translate(x,y);
+    const ow=w*1.25,oh=h*0.32;
+    // Dunkle Pfütze
+    ctx.beginPath();
+    for(let i=0;i<p.shape.length;i++){const a=i/p.shape.length*6.283,r=p.shape[i];ctx.lineTo(Math.cos(a)*ow*r,Math.sin(a)*oh*r);}
+    ctx.closePath();ctx.fillStyle='#06080b';ctx.fill();
+    // Schillernder Ölfilm (animiert, Lichtinterferenz)
+    ctx.globalCompositeOperation='lighter';
+    const ph2=fc*0.04;
+    ctx.fillStyle=`rgba(${100+90*Math.sin(ph2)|0},20,${180+75*Math.cos(ph2)|0},.16)`;
+    ctx.beginPath();ctx.ellipse(ow*0.08,0,ow*0.52,oh*0.62,0,0,7);ctx.fill();
+    ctx.fillStyle=`rgba(20,${110+90*Math.sin(ph2+2.1)|0},${60+80*Math.cos(ph2+1)|0},.13)`;
+    ctx.beginPath();ctx.ellipse(-ow*0.1,oh*0.05,ow*0.42,oh*0.52,0.4,0,7);ctx.fill();
+    ctx.fillStyle=`rgba(${180+75*Math.cos(ph2+3.5)|0},${70+70*Math.sin(ph2+1.5)|0},10,.10)`;
+    ctx.beginPath();ctx.ellipse(ow*0.04,-oh*0.06,ow*0.36,oh*0.44,-0.3,0,7);ctx.fill();
+    ctx.globalCompositeOperation='source-over';
     ctx.restore();
   }
 }
