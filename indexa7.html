@@ -1556,8 +1556,9 @@ function frame(){
         polizei=null;polizeiWarning=0;polizeiNextAt=score+Math.round((45+Math.random()*35)*200);
         document.getElementById('polWarn').classList.remove('on');
       } else if(diff!=='ghost'){
-        if(Math.abs(polizei.x-player.x)<pw*0.65&&Math.abs(polizei.y-player.y)<ph*0.88){crash();return;}
-        const behind=polizei.y>player.y&&polizei.y<player.y+ph*4;
+        const onScreen=polizei.y>=0&&polizei.y<H;
+        if(onScreen&&Math.abs(polizei.x-player.x)<pw*0.65&&Math.abs(polizei.y-player.y)<ph*0.88){crash();return;}
+        const behind=onScreen&&polizei.y>player.y&&polizei.y<player.y+ph*4;
         if(behind&&Math.abs(polizei.x-player.x)<pw*2){
           polizeiWarning++;if(polizeiWarning>260){addFloat('Erwischt!','#ff4040');crash();return;}
         }else{if(polizeiWarning>0)polizeiWarning=Math.max(0,polizeiWarning-3);}
