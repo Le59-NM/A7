@@ -719,10 +719,19 @@ const CARS=[
 const TIRE_DEFS={soft:{label:'Soft',handling:0.08,kmh:0,cost:5000,desc:'+Grip, +Handling'},hard:{label:'Hard',handling:-0.03,kmh:15,cost:5000,desc:'+15 km/h, -Grip'}};
 function carDef(id){
   const base=CARS.find(c=>c.id===id)||CARS[0];
-  const t=tuning[id]||{speed:0,handling:0};
+  const t=tuning[id]||{};
   const col=carColors[id]||base.color;
   const tire=TIRE_DEFS[t.tire]||{handling:0,kmh:0};
-  return Object.assign({},base,{maxKmh:base.maxKmh+(t.speed||0)*8+tire.kmh,handling:base.handling+(t.handling||0)*0.02+tire.handling,color:col});
+  const ecuBonus=tuning['_global']?.ecu?10:0;
+  const wt=t.weight_red?{handling:0.04,rampMul:0.12}:{handling:0,rampMul:0};
+  return Object.assign({},base,{
+    maxKmh:base.maxKmh+(t.speed||0)*8+tire.kmh+ecuBonus,
+    handling:base.handling+(t.handling||0)*0.02+tire.handling+wt.handling,
+    rampMul:base.rampMul+(t.accel||0)*0.15+wt.rampMul,
+    brakeMin:Math.max(0.01,0.04-(t.brake||0)*0.01),
+    brakeRate:(t.brake||0)*0.0008,
+    nitroMul:(t.nitro_inj||0)*0.10,
+    color:col});
 }
 let coins=0, owned={fiesta:true}, sel='fiesta';
 function buildSkinSprite(def,w,h){
@@ -1635,15 +1644,15 @@ function frame(){
     tunnelAmt+=((ROUTE[segIndex].type==='tunnel'?1:0)-tunnelAmt)*0.04;
     if(player.hit>0)player.hit--;
     // Sprung (Rampe): Auto fliegt hoch, Welt rauscht in Echtzeit schneller drunter durch
-    const bkTarget=(braking&&player.air<=0)?Math.max(0.04,1-brakeDepth*0.96):1;
-    if(brakeFactor>bkTarget)brakeFactor=Math.max(bkTarget,brakeFactor-Math.max(0.0015,brakeDepth*0.004));
+    const bkTarget=(braking&&player.air<=0)?Math.max(carCfg.brakeMin||0.04,1-brakeDepth*0.96):1;
+    if(brakeFactor>bkTarget)brakeFactor=Math.max(bkTarget,brakeFactor-Math.max(0.0015+(carCfg.brakeRate||0),brakeDepth*(0.004+(carCfg.brakeRate||0))));
     else brakeFactor=Math.min(1,brakeFactor+0.005);
     let eff=speed*brakeFactor;
     if(player.air>0){ eff=speed+player.jumpBoost/0.18; player.air+=1/player.jumpDur;
       if(player.air>=1){player.air=0;dust(player.x,player.y+carH()*0.4);AU.land();} }
     if(fc<nitroUntil&&player.air<=0){
       const t=Math.max(0,(nitroUntil-fc)/200);
-      eff=Math.max(eff,speed*(1+t*0.88));    // Nitro setzt Mindest-eff, überlagert Bremse
+      eff=Math.max(eff,speed*(1+t*(0.88+(carCfg.nitroMul||0))));    // Nitro setzt Mindest-eff, überlagert Bremse
       if(fc%2===0){const cw=carW(),ch=carH();for(let i=0;i<3;i++){const sp=3+Math.random()*4;
         particles.push({x:player.x+(Math.random()-0.5)*cw*0.45,y:player.y+ch*0.46,vx:(Math.random()-0.5)*1.2,vy:sp,life:12+Math.random()*8,max:20,col:['#7bdcff','#4aabff','#b8f0ff'][Math.random()*3|0],r:2+Math.random()*3,fire:true});}}
     }
@@ -1877,7 +1886,7 @@ function renderMute(){muteBtn.innerHTML=AU.isMuted()?SVG_OFF:SVG_ON;}
 muteBtn.onclick=()=>{AU.resume();AU.setMuted(!AU.isMuted());renderMute();};
 renderMute();
 const COLOR_PRESETS=['#edeef0','#c0392b','#2563a8','#1f8a6d','#111418','#f4a020','#7b2d8b','#a07850'];
-const TUNE_COSTS={speed:[800,2000,4500],handling:[600,1500,3500]};
+const TUNE_COSTS={speed:[800,2000,4500],handling:[600,1500,3500],accel:[1000,2500,5500],brake:[1200,3000,6000],nitro_inj:[2000,5000,10000]};
 const NITRO_TANK_COSTS=[5000,12000,25000];
 function renderGarage(){
   document.getElementById('grgCoins').textContent=Math.round(coins).toLocaleString('de-DE');
@@ -1923,21 +1932,32 @@ function renderGarage(){
       });info.appendChild(colorRow);
       // Tuning
       const tunSec=document.createElement('div');tunSec.className='tun-section';
-      ['speed','handling'].forEach(stat=>{
+      const statLabels={speed:'Tempo',handling:'Handling',accel:'Beschl.',brake:'Bremsen',nitro_inj:'Nitrous'};
+      ['speed','handling','accel','brake','nitro_inj'].forEach(stat=>{
         const lvl=tun[stat]||0;
         const row=document.createElement('div');row.className='tun-row';
-        const lbl=document.createElement('span');lbl.className='tun-lbl';lbl.textContent=stat==='speed'?'Tempo':'Handling';
+        const lbl=document.createElement('span');lbl.className='tun-lbl';lbl.textContent=statLabels[stat];
         const stars=document.createElement('span');stars.className='tun-stars';
         stars.textContent='★'.repeat(lvl)+'☆'.repeat(3-lvl);
         const btn=document.createElement('button');btn.className='tun-btn';
         if(lvl>=3){btn.textContent='MAX';btn.disabled=true;}
         else{const cost=TUNE_COSTS[stat][lvl];btn.textContent='▲ '+cost.toLocaleString('de-DE');
-          btn.onclick=()=>{if(coins>=cost){coins-=cost;if(!tuning[c.id])tuning[c.id]={speed:0,handling:0};tuning[c.id][stat]++;
+          btn.onclick=()=>{if(coins>=cost){coins-=cost;if(!tuning[c.id])tuning[c.id]={};tuning[c.id][stat]=(tuning[c.id][stat]||0)+1;
             delete spriteCache['P|'+sel];Store.save();AU.free();renderGarage();}
             else{AU.pothole();card.classList.add('shake');setTimeout(()=>card.classList.remove('shake'),300);}};
         }
         row.appendChild(lbl);row.appendChild(stars);row.appendChild(btn);tunSec.appendChild(row);
-      });info.appendChild(tunSec);
+      });
+      // Gewichtsreduzierung (einmalig)
+      const wtRow=document.createElement('div');wtRow.className='tun-row';wtRow.style.marginTop='2px';
+      const wtLbl=document.createElement('span');wtLbl.className='tun-lbl';wtLbl.textContent='Gewicht';wtRow.appendChild(wtLbl);
+      const wtBtn=document.createElement('button');wtBtn.className='tun-btn'+(tun.weight_red?' on':'');
+      if(tun.weight_red){wtBtn.textContent='Leichtbau ✓';wtBtn.disabled=true;}
+      else{wtBtn.textContent='Leichtbau · 15.000';
+        wtBtn.onclick=()=>{if(coins>=15000){coins-=15000;if(!tuning[c.id])tuning[c.id]={};tuning[c.id].weight_red=true;Store.save();AU.free();renderGarage();}else{AU.pothole();}};
+      }
+      wtRow.appendChild(wtBtn);tunSec.appendChild(wtRow);
+      info.appendChild(tunSec);
       // Reifenwahl
       const tireRow=document.createElement('div');tireRow.className='tun-row';tireRow.style.cssText='flex-wrap:wrap;gap:5px;align-items:center;margin-top:4px;';
       const tireLbl=document.createElement('span');tireLbl.className='tun-lbl';tireLbl.textContent='Reifen';tireRow.appendChild(tireLbl);
@@ -2006,6 +2026,17 @@ function renderGarage(){
     ntInfo.appendChild(ntBtn);
   }else{const nm=document.createElement('div');nm.style.cssText='text-align:center;color:#4ade80;font-weight:700;font-size:15px;padding:6px 0;';nm.textContent='MAXIMAL · 350 Frames';ntInfo.appendChild(nm);}
   ntCard.appendChild(ntInfo);grid.appendChild(ntCard);
+  // ECU-Chip (global, einmalig)
+  const ecuCard=document.createElement('div');ecuCard.className='acard';
+  const ecuInfo=document.createElement('div');ecuInfo.className='ainfo';
+  const ecuTitle=document.createElement('div');ecuTitle.className='aname';ecuTitle.textContent='ECU-Chip';ecuInfo.appendChild(ecuTitle);
+  const ecuSub=document.createElement('div');ecuSub.className='adesc';ecuSub.textContent='+10 km/h Höchstgeschwindigkeit auf alle Fahrzeuge dauerhaft';ecuInfo.appendChild(ecuSub);
+  if(!tuning['_global']?.ecu){
+    const ecuBtn=document.createElement('button');ecuBtn.className='cbtn buy';ecuBtn.textContent='Freischalten · 30.000 Coins';
+    ecuBtn.onclick=()=>{if(coins>=30000){coins-=30000;if(!tuning['_global'])tuning['_global']={};tuning['_global'].ecu=true;Store.save();AU.free();renderGarage();}else{AU.pothole();ecuCard.classList.add('shake');setTimeout(()=>ecuCard.classList.remove('shake'),300);}};
+    ecuInfo.appendChild(ecuBtn);
+  }else{const ecuDone=document.createElement('div');ecuDone.style.cssText='text-align:center;color:#4ade80;font-weight:700;font-size:15px;padding:6px 0;';ecuDone.textContent='+10 km/h aktiv ✓';ecuInfo.appendChild(ecuDone);}
+  ecuCard.appendChild(ecuInfo);grid.appendChild(ecuCard);
 }
 let menuPage=0;
 function goToPage(n,animate){
