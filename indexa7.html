@@ -198,6 +198,16 @@
   .btn-row-sec{display:flex;gap:8px;width:100%;}
   .btn-sm{flex:1;cursor:pointer;border:1.5px solid rgba(255,255,255,.22);background:rgba(10,14,8,.4);color:#dfe6d8;padding:9px 0;border-radius:12px;font-size:11px;font-weight:700;letter-spacing:.06em;backdrop-filter:blur(4px);}
   .btn-sm:active{transform:scale(.96);}
+  #revivePanel{position:absolute;inset:0;background:rgba(0,0,0,.78);display:flex;align-items:center;justify-content:center;z-index:300;}
+  #revivePanel.hidden{display:none;}
+  #rvBox{background:linear-gradient(160deg,#1c1f23,#14171a);border:2px solid #4ade80;border-radius:18px;padding:26px 28px 22px;text-align:center;width:min(280px,85vw);}
+  .rv-title{font-size:22px;font-weight:900;color:#4ade80;letter-spacing:2px;margin-bottom:4px;}
+  .rv-sub{font-size:13px;color:#7a8878;margin-bottom:12px;}
+  .rv-cost{font-size:30px;font-weight:900;color:#ffd23f;margin-bottom:14px;}
+  .rv-bw{height:6px;background:#2a2c30;border-radius:3px;margin-bottom:18px;overflow:hidden;}
+  #rvBar{height:100%;background:linear-gradient(90deg,#22c55e,#4ade80);border-radius:3px;transition:width .08s linear;}
+  .rv-btns{display:flex;gap:10px;}
+  .rv-btns .btn{flex:1;font-size:14px;padding:11px 0;}
 </style>
 </head>
 <body>
@@ -343,6 +353,19 @@
         <button class="btn ghost" id="ptoMenu">Menü</button>
         <button class="btn primary" id="resumeBtn">Weiterfahren</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<div id="revivePanel" class="hidden">
+  <div id="rvBox">
+    <div class="rv-title">ZWEITE CHANCE?</div>
+    <div class="rv-sub">Jetzt weiterfahren</div>
+    <div class="rv-cost" id="rvCost">500 Coins</div>
+    <div class="rv-bw"><div id="rvBar" style="width:100%"></div></div>
+    <div class="rv-btns">
+      <button class="btn ghost" id="rvNo">Aufgeben</button>
+      <button class="btn primary" id="rvYes">Weiter!</button>
     </div>
   </div>
 </div>
@@ -910,8 +933,11 @@ player.x=player.targetX=lanes[1]; player.y=H-carH()*1.7;
 let nightPeaked=false,runAch=[];
 let polizei=null,polizeiNextAt=0,polizeiWarning=0;
 let maxKmh=0,runStartTime=0,nitroUntil=0;
+let reviveUsed=false,reviving=false,reviveInt=null;
+let coinMultiplier=1;
+const COINMUL_TIERS=[{mul:1.25,cost:10000,label:'×1,25'},{mul:1.50,cost:30000,label:'×1,50'},{mul:2.00,cost:75000,label:'×2,00'}];
 function resetRun(){score=0;speed=DIFF[diff].base;scroll=0;spawnTimer=0;enemies=[];signs=[];segIndex=0;segStart=0;tunnelAmt=0;braking=false;brakeDepth=0;brakeFactor=1;
-  pickups=[];particles=[];floats=[];pickupTimer=160;freeUntil=0;flash=0;skidMarks=[];nightAmt=0;milestoneReached=new Set();nearMissCount=0;nightPeaked=false;runAch=[];nitroUntil=0;
+  pickups=[];particles=[];floats=[];pickupTimer=160;freeUntil=0;flash=0;skidMarks=[];nightAmt=0;milestoneReached=new Set();nearMissCount=0;nightPeaked=false;runAch=[];nitroUntil=0;reviveUsed=false;reviving=false;
   polizei=null;polizeiNextAt=Math.round((35+Math.random()*20)*200);polizeiWarning=0;
   maxKmh=0;runStartTime=Date.now();
   document.getElementById('polWarn').classList.remove('on');
@@ -1509,7 +1535,7 @@ function closeAchievements(){AU.click();document.getElementById('achScreen').cla
 /* ============ loop ============ */
 function frame(){
   requestAnimationFrame(frame);
-  if(paused){
+  if(paused||reviving){
     ctx.clearRect(0,0,W,H);drawWorld();
     for(const s of signs)drawSign(s);for(const p of pickups)drawPickup(p);
     for(const e of enemies)blitVehicle(e);drawPlayerCar();drawParticles();drawFloats();drawFreeBar();postFX();
@@ -1656,11 +1682,14 @@ function frame(){
   drawFreeBar();
   postFX();
 }
-function crash(){paused=false;state='over';bests[diff]=Math.max(bests[diff]||0,score);AU.engineStop();AU.crash();
+function crash(){
+  if(reviving)return;
+  if(!reviveUsed&&diff!=='ghost'&&coins>=reviveCost()){offerRevive();return;}
+  paused=false;state='over';bests[diff]=Math.max(bests[diff]||0,score);AU.engineStop();AU.crash();
   document.getElementById('pauseBtn').classList.remove('on');document.getElementById('ghostHud').classList.remove('on');document.getElementById('pause').classList.add('hidden');
   document.getElementById('polWarn').classList.remove('on');polizei=null;polizeiWarning=0;
   const coinMul={chill:1,normal:1.75,brutal:3,ghost:25}[diff]||1;
-  const earned=Math.floor(score/2*coinMul);coins+=earned;
+  const earned=Math.floor(score/2*coinMul*coinMultiplier);coins+=earned;
   totalKm+=score/200;
   updateDailyChallengeProgress(score/200,earned);
   checkRunAchievements(score/200,earned);
@@ -1687,6 +1716,20 @@ function crash(){paused=false;state='over';bests[diff]=Math.max(bests[diff]||0,s
   if(km>803)v='Grenztunnel Füssen erreicht – absolut legendär!';
   document.getElementById('verdict').textContent=v;
   document.getElementById('hud').classList.remove('on');document.getElementById('place').classList.remove('on');document.getElementById('speedoBox').classList.remove('on');document.getElementById('brakeBtn').classList.remove('on');document.getElementById('selfDestructBtn').classList.remove('on');braking=false;brakeDepth=0;brakeFactor=1;document.getElementById('over').classList.remove('hidden');}
+function reviveCost(){return Math.max(200,Math.min(8000,Math.round(score/200*20)));}
+function offerRevive(){
+  reviving=true;AU.engineStop();AU.crash();
+  document.getElementById('polWarn').classList.remove('on');
+  const cost=reviveCost();
+  document.getElementById('rvCost').textContent=cost.toLocaleString('de-DE')+' Coins';
+  document.getElementById('rvBar').style.width='100%';
+  document.getElementById('revivePanel').classList.remove('hidden');
+  let t=100;
+  reviveInt=setInterval(()=>{
+    t--;document.getElementById('rvBar').style.width=t+'%';
+    if(t<=0){clearInterval(reviveInt);reviving=false;reviveUsed=true;document.getElementById('revivePanel').classList.add('hidden');crash();}
+  },80);
+}
 function startGame(){AU.resume();AU.click();resetRun();state='play';paused=false;document.getElementById('runStats').classList.remove('on');AU.engineStart(carDef(sel).ep);document.getElementById('menu').classList.add('hidden');document.getElementById('over').classList.add('hidden');document.getElementById('pause').classList.add('hidden');document.getElementById('hud').classList.add('on');document.getElementById('place').classList.add('on');document.getElementById('speedoBox').classList.add('on');document.getElementById('pauseBtn').classList.add('on');document.getElementById('ghostHud').classList.toggle('on',diff==='ghost');document.getElementById('brakeBtn').classList.add('on');document.getElementById('selfDestructBtn').classList.toggle('on',diff==='ghost');}
 function toMenu(){paused=false;AU.engineStop();AU.click();state='menu';enemies=[];signs=[];pickups=[];particles=[];floats=[];tunnelAmt=0;player=newPlayer();player.x=player.targetX=lanes[1];player.y=H-carH()*1.7;goToPage(0,false);refreshMenuStats();document.getElementById('speedoBox').classList.remove('on');document.getElementById('over').classList.add('hidden');document.getElementById('pause').classList.add('hidden');document.getElementById('pauseBtn').classList.remove('on');document.getElementById('ghostHud').classList.remove('on');document.getElementById('brakeBtn').classList.remove('on');document.getElementById('selfDestructBtn').classList.remove('on');braking=false;brakeDepth=0;brakeFactor=1;document.getElementById('menu').classList.remove('hidden');}
 function openShop(){AU.resume();AU.click();renderShop();document.getElementById('menu').classList.add('hidden');document.getElementById('over').classList.add('hidden');document.getElementById('shop').classList.remove('hidden');}
@@ -1891,6 +1934,16 @@ function openAutos(){AU.resume();AU.click();renderAutos();document.getElementByI
 function closeAutos(){AU.click();document.getElementById('autos').classList.add('hidden');refreshMenuStats();document.getElementById('menu').classList.remove('hidden');}
 document.getElementById('autosBack').onclick=closeAutos;
 document.getElementById('shopBack').onclick=closeShop;
+document.getElementById('rvNo').onclick=()=>{clearInterval(reviveInt);reviving=false;reviveUsed=true;document.getElementById('revivePanel').classList.add('hidden');crash();};
+document.getElementById('rvYes').onclick=()=>{
+  const cost=reviveCost();if(coins<cost){AU.pothole();return;}
+  clearInterval(reviveInt);coins-=cost;reviveUsed=true;reviving=false;Store.save();
+  document.getElementById('revivePanel').classList.add('hidden');
+  player=newPlayer();player.x=player.targetX=lanes[1];player.y=H-carH()*1.7;player.hit=240;
+  polizei=null;polizeiWarning=0;document.getElementById('polWarn').classList.remove('on');
+  enemies=enemies.filter(e=>Math.abs(e.y-player.y)>carH()*5);
+  flash=0.4;addFloat('Zweite Chance!','#4ade80');AU.engineStart(carDef(sel).ep);
+};
 document.getElementById('achBtn').onclick=openAchievements;
 document.getElementById('achBack').onclick=closeAchievements;
 document.getElementById('shopBtn').onclick=openShop;
