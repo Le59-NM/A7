@@ -714,6 +714,8 @@ const Store={
     if(dc!=null){try{dailyChallenge=JSON.parse(dc);}catch(e){}}
     if(ach!=null){try{achievements=new Set(JSON.parse(ach));}catch(e){}}
     if(tkm!=null)totalKm=+tkm||0;
+    const mul=await get('a7:coinmul');
+    if(mul!=null)coinMultiplier=+mul||1;
     if(!owned||!owned.fiesta){owned=owned||{};owned.fiesta=true;} if(!owned[sel])sel='fiesta';
     refreshMenuStats();
   },
@@ -721,7 +723,8 @@ const Store={
     const vals=[['a7:coins',String(Math.round(coins))],['a7:owned',JSON.stringify(owned)],
       ['a7:sel',sel],['a7:bests',JSON.stringify(bests)],['a7:tuning',JSON.stringify(tuning)],
       ['a7:colors',JSON.stringify(carColors)],['a7:daily',JSON.stringify(dailyChallenge)],
-      ['a7:ach',JSON.stringify([...achievements])],['a7:totalkm',String(Math.round(totalKm))]];
+      ['a7:ach',JSON.stringify([...achievements])],['a7:totalkm',String(Math.round(totalKm))],
+      ['a7:coinmul',String(coinMultiplier)]];
     for(const [k,v] of vals){this._wsPut(k,v);this._lsPut(k,v);}
   }
 };
@@ -1869,6 +1872,21 @@ function renderGarage(){
     }
     info.appendChild(btn);card.appendChild(info);grid.appendChild(card);
   }
+  // Coin-Multiplikator Karte
+  const mulCard=document.createElement('div');mulCard.className='acard';
+  const mulInfo=document.createElement('div');mulInfo.className='ainfo';
+  const mulTitle=document.createElement('div');mulTitle.className='aname';mulTitle.textContent='Coin-Multiplikator';mulInfo.appendChild(mulTitle);
+  const mulSub=document.createElement('div');mulSub.className='adesc';mulSub.textContent='Erhöht alle Run-Einnahmen dauerhaft';mulInfo.appendChild(mulSub);
+  const curMulEl=document.createElement('div');curMulEl.style.cssText='font-size:30px;font-weight:900;color:#ffd23f;text-align:center;margin:10px 0 6px;';
+  curMulEl.textContent='×'+coinMultiplier.toFixed(2).replace('.00','').replace('.','\,');mulInfo.appendChild(curMulEl);
+  const nxt=COINMUL_TIERS.find(t=>t.mul>coinMultiplier);
+  if(nxt){
+    const mbtn=document.createElement('button');mbtn.className='cbtn buy';
+    mbtn.textContent='Upgrade → '+nxt.label+' · '+nxt.cost.toLocaleString('de-DE')+' Coins';
+    mbtn.onclick=()=>{if(coins>=nxt.cost){coins-=nxt.cost;coinMultiplier=nxt.mul;Store.save();AU.free();renderGarage();}else{AU.pothole();mulCard.classList.add('shake');setTimeout(()=>mulCard.classList.remove('shake'),300);}};
+    mulInfo.appendChild(mbtn);
+  }else{const mx=document.createElement('div');mx.style.cssText='text-align:center;color:#4ade80;font-weight:700;font-size:15px;padding:6px 0;';mx.textContent='MAXIMAL';mulInfo.appendChild(mx);}
+  mulCard.appendChild(mulInfo);grid.appendChild(mulCard);
 }
 let menuPage=0;
 function goToPage(n,animate){
