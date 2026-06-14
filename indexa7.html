@@ -386,20 +386,23 @@ const AU=(()=>{
     isMuted(){return muted;},
     setCarProfile(ep){if(ep)carEp=ep;},
     engineStart(ep){ensure();if(engine)return;if(ep)carEp=ep;const t=ac.currentTime;
-      const o1=ac.createOscillator();o1.type='sawtooth';o1.frequency.value=carEp.baseF;
-      const o2=ac.createOscillator();o2.type='square';o2.frequency.value=carEp.baseF*2;
+      const o1t=carEp.o1t||'sawtooth',o2t=carEp.o2t||'square';
+      const o2v=carEp.o2v!=null?carEp.o2v:0.28,sv=carEp.sv!=null?carEp.sv:0.5;
+      const lfoT=carEp.lfoT||'sawtooth',bQ=carEp.bQ||5;
+      const o1=ac.createOscillator();o1.type=o1t;o1.frequency.value=carEp.baseF;
+      const o2=ac.createOscillator();o2.type=o2t;o2.frequency.value=carEp.baseF*2;
       const sub=ac.createOscillator();sub.type='sine';sub.frequency.value=carEp.baseF*0.5;
       const mix=ac.createGain();mix.gain.value=0.5;o1.connect(mix);
-      const g2=ac.createGain();g2.gain.value=0.28;o2.connect(g2);g2.connect(mix);
-      const gs=ac.createGain();gs.gain.value=0.5;sub.connect(gs);gs.connect(mix);
+      const g2=ac.createGain();g2.gain.value=o2v;o2.connect(g2);g2.connect(mix);
+      const gs=ac.createGain();gs.gain.value=sv;sub.connect(gs);gs.connect(mix);
       const ns=ac.createBufferSource();ns.buffer=noiseBuf;ns.loop=true;
       const nbp=ac.createBiquadFilter();nbp.type='bandpass';nbp.frequency.value=950;nbp.Q.value=1.1;
       const ng=ac.createGain();ng.gain.value=carEp.noise;ns.connect(nbp);nbp.connect(ng);ng.connect(mix);
       const lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.value=850;lp.Q.value=1.2;mix.connect(lp);
-      const body=ac.createBiquadFilter();body.type='bandpass';body.frequency.value=carEp.bodyF;body.Q.value=5;
+      const body=ac.createBiquadFilter();body.type='bandpass';body.frequency.value=carEp.bodyF;body.Q.value=bQ;
       const bodyG=ac.createGain();bodyG.gain.value=0.7;mix.connect(body);body.connect(bodyG);
       const throb=ac.createGain();throb.gain.value=0.5;lp.connect(throb);bodyG.connect(throb);
-      const lfo=ac.createOscillator();lfo.type='sawtooth';lfo.frequency.value=carEp.lfoF;
+      const lfo=ac.createOscillator();lfo.type=lfoT;lfo.frequency.value=carEp.lfoF;
       const lfoG=ac.createGain();lfoG.gain.value=0.5;lfo.connect(lfoG);lfoG.connect(throb.gain);
       const em=ac.createGain();em.gain.value=0.0001;throb.connect(em);em.connect(master);em.connect(delay);
       o1.start();o2.start();sub.start();ns.start();lfo.start();em.gain.setTargetAtTime(0.08,t,0.3);
@@ -414,7 +417,8 @@ const AU=(()=>{
         engine.sub.frequency.setTargetAtTime(f*0.5,t,0.05);engine.lfo.frequency.setTargetAtTime(f,t,0.04);
         engine.body.frequency.setTargetAtTime(carEp.bodyF,t,0.08);
         engine.ng.gain.setTargetAtTime(carEp.noise*(0.7+sp*0.018),t,0.1);
-        engine.lp.frequency.setTargetAtTime(Math.max(320,560+sp*120-tun*340),t,0.1);}
+        engine.lp.frequency.setTargetAtTime(Math.max(320,560+sp*120-tun*340),t,0.1);
+        if(carEp.crackle&&Math.random()<0.005&&sp>3){const tc=ac.currentTime;const oc=ac.createOscillator();oc.type='square';oc.frequency.setValueAtTime(75+Math.random()*45,tc);const gc=ac.createGain();gc.gain.setValueAtTime(0.16+Math.random()*0.10,tc);gc.gain.exponentialRampToValueAtTime(0.0001,tc+0.022);oc.connect(gc);gc.connect(master);oc.start(tc);oc.stop(tc+0.03);}}
       const ct=ac.currentTime;
       wet.gain.setTargetAtTime(tun*0.54,ct,0.1);
       delay.delayTime.setTargetAtTime(0.10+tun*0.20,ct,0.15);
@@ -432,6 +436,7 @@ const AU=(()=>{
     free(){tone(523,523,0.16,'triangle',0.2);setTimeout(()=>tone(784,784,0.28,'triangle',0.2),120);},
     pothole(){tone(90,50,0.3,'square',0.3);noise(0.25,'lowpass',420,90,0.28);for(let i=0;i<3;i++)setTimeout(()=>noise(0.05,'bandpass',300,300,0.16),i*55);},
     crash(){noise(0.7,'lowpass',1600,60,0.6,true);tone(160,35,0.7,'sawtooth',0.42,true);tone(80,30,0.8,'square',0.28,true);},
+    blitz(){ensure();tone(2400,6000,0.025,'sine',0.32);tone(6000,800,0.06,'triangle',0.14);noise(0.05,'highpass',4000,9000,0.12);},
     click(){tone(420,420,0.06,'square',0.16);}
   };
 })();
@@ -624,37 +629,37 @@ const CARS=[
    displacement:1084, power:55, ps:75, cylinders:3,
    maxKmh:170, rampMul:0.70, handling:0.19,
    desc:'1.1 EcoBoost · 3-Zyl.',
-   ep:{baseF:105,bodyF:185,lfoF:98,noise:0.072}},
+   ep:{baseF:105,bodyF:185,lfoF:98,noise:0.082, o1t:'square',o2t:'triangle',o2v:0.14,sv:0.12,lfoT:'triangle',bQ:3}},
   {id:'golfgti', name:'VW Golf GTI', price:25000, kind:'hatch', color:'#c8282e',
    displacement:1984, power:195, ps:265, cylinders:4,
    maxKmh:250, rampMul:1.05, handling:0.27,
    desc:'2.0 TSI · 7G-DSG · 370 Nm · FWD',
-   ep:{baseF:88,bodyF:165,lfoF:85,noise:0.058}},
+   ep:{baseF:88,bodyF:165,lfoF:85,noise:0.058, o2v:0.32,sv:0.42,bQ:5}},
   {id:'a200', name:'Mercedes A 200', price:35000, kind:'hatch', color:'#c2c5cc',
    displacement:1332, power:120, ps:163, cylinders:4,
    maxKmh:225, rampMul:1.10, handling:0.26,
    desc:'1.3T 7G-DCT · Mild Hybrid · 270 Nm',
-   ep:{baseF:84,bodyF:155,lfoF:82,noise:0.050}},
+   ep:{baseF:84,bodyF:155,lfoF:82,noise:0.036, o2t:'sine',o2v:0.11,sv:0.64,bQ:7}},
   {id:'bmwm5', name:'BMW M5 G90', price:120000, kind:'sedan', color:'#0d1018',
    displacement:4395, power:535, ps:727, cylinders:8,
    maxKmh:305, rampMul:1.65, handling:0.29,
    desc:'4.4 V8 Biturbo · 8G M Steptronic · 1.000 Nm · PHEV 727 PS · M xDrive',
-   ep:{baseF:60,bodyF:105,lfoF:58,noise:0.036}},
+   ep:{baseF:60,bodyF:105,lfoF:58,noise:0.026, o2v:0.38,sv:0.88,bQ:8,crackle:true}},
   {id:'amggt63', name:'Mercedes AMG GT 63', price:185000, kind:'sport', color:'#0c0e11', stripe:'#1a1f24',
    displacement:3982, power:450, ps:612, cylinders:8,
    maxKmh:317, rampMul:1.90, handling:0.32,
    desc:'3.9L V8 · AMG MCT 9G · 850 Nm · AWD',
-   ep:{baseF:56,bodyF:98,lfoF:55,noise:0.032}},
+   ep:{baseF:56,bodyF:98,lfoF:55,noise:0.030, o2t:'square',o2v:0.44,sv:0.94,lfoT:'triangle',bQ:9,crackle:true}},
   {id:'porsche911ts', name:'Porsche 911 Turbo S', price:250000, kind:'sport', color:'#9aa4ae',
    displacement:3745, power:478, ps:650, cylinders:6,
    maxKmh:330, rampMul:2.20, handling:0.38,
    desc:'3.8 Flat-6 Biturbo · 8G PDK · 800 Nm · AWD',
-   ep:{baseF:96,bodyF:188,lfoF:93,noise:0.062}},
+   ep:{baseF:96,bodyF:188,lfoF:93,noise:0.070, o2v:0.24,sv:0.34,lfoT:'square',bQ:6}},
   {id:'ferrari296', name:'Ferrari 296 GTB', price:460000, kind:'sport', color:'#cc0000',
    displacement:2992, power:648, ps:880, cylinders:6,
    maxKmh:330, rampMul:2.40, handling:0.40,
    desc:'3.0L V6 120° Twin Turbo · 8G F1-DCT · 755 Nm · PHEV 880 PS',
-   ep:{baseF:102,bodyF:205,lfoF:98,noise:0.060}},
+   ep:{baseF:102,bodyF:205,lfoF:98,noise:0.062, o2v:0.34,sv:0.18,bQ:4}},
 ];
 function carDef(id){
   const base=CARS.find(c=>c.id===id)||CARS[0];
@@ -971,10 +976,11 @@ function spawn(ambient){
 
 /* ============ Power-ups ============ */
 function spawnPickup(){
-  const r=Math.random(); const type = r<0.30?'ramp' : r<0.47?'rocket' : r<0.63?'coins' : r<0.77?'nitro' : r<0.88?'pothole' : 'oil';
+  const r=Math.random(); const type = r<0.28?'ramp' : r<0.43?'rocket' : r<0.57?'coins' : r<0.70?'nitro' : r<0.78?'blitzer' : r<0.88?'pothole' : 'oil';
   const lane=Math.floor(Math.random()*LANES);
   const p={type,lane,x:lanes[lane],y:-carH()*1.6};
   if(type==='pothole'||type==='oil'){p.shape=[];for(let i=0;i<13;i++)p.shape.push(0.6+Math.random()*0.4);}
+  if(type==='blitzer'){const side=Math.random()<0.5?0:1;p.x=side===0?roadX+shoulderW*0.5:roadX+roadW-shoulderW*0.5;}
   pickups.push(p);
 }
 function addFloat(text,col){floats.push({x:player.x,y:player.y-carH()*0.9,text,col,life:70});}
@@ -1011,6 +1017,12 @@ function trigger(type){
   }else if(type==='nitro'){
     if(player.air>0){nitroUntil=fc+200;} else {nitroUntil=fc+200;}
     addFloat('NITRO!','#7bdcff');AU.nitro();
+  }else if(type==='blitzer'){
+    const kmh=Math.round(eff*18);
+    const bonus=Math.max(50,Math.round(kmh*2.5));
+    coins+=bonus;Store.save();
+    flash=0.88;
+    addFloat('BLITZER! +'+bonus.toLocaleString('de-DE'),'#ffe600');AU.blitz();
   }else if(type==='pothole'){
     if(player.air>0)return;
     player.ctrl=Math.round((1+Math.random())*60);
@@ -1266,6 +1278,30 @@ function drawPickup(p){
     ctx.fillStyle=`rgba(${180+75*Math.cos(ph2+3.5)|0},${70+70*Math.sin(ph2+1.5)|0},10,.10)`;
     ctx.beginPath();ctx.ellipse(ow*0.04,-oh*0.06,ow*0.36,oh*0.44,-0.3,0,7);ctx.fill();
     ctx.globalCompositeOperation='source-over';
+    ctx.restore();
+  }else if(p.type==='blitzer'){
+    ctx.save();ctx.translate(x,y);
+    const pw=7,ph=h*1.25;
+    // Schwarz-gelber Pfosten
+    for(let i=0;i<6;i++){ctx.fillStyle=i%2===0?'#f5c400':'#1a1a1a';ctx.fillRect(-pw/2,-ph*0.5+i*(ph/6),pw,ph/6);}
+    // Kamera-Gehäuse
+    const kw=w*0.60,kh=h*0.29,ky=-ph*0.5-kh-2;
+    const kg=ctx.createLinearGradient(0,ky,0,ky+kh);kg.addColorStop(0,'#3a3a3a');kg.addColorStop(1,'#1e1e1e');
+    rr(ctx,-kw/2,ky,kw,kh,5);ctx.fillStyle=kg;ctx.fill();
+    // Linse
+    const ly=ky+kh*0.62,lr=kh*0.33;
+    ctx.fillStyle='#0c0c1c';ctx.beginPath();ctx.arc(0,ly,lr,0,7);ctx.fill();
+    const lg=ctx.createRadialGradient(-lr*0.28,ly-lr*0.28,lr*0.08,0,ly,lr);
+    lg.addColorStop(0,'rgba(160,190,255,.80)');lg.addColorStop(1,'rgba(30,50,200,.05)');
+    ctx.fillStyle=lg;ctx.beginPath();ctx.arc(0,ly,lr,0,7);ctx.fill();
+    // Blink-LED
+    if(fc%50<22){ctx.fillStyle='#ff1818';ctx.shadowBlur=8;ctx.shadowColor='#f00';ctx.beginPath();ctx.arc(kw*0.34,ky+5,3.5,0,7);ctx.fill();ctx.shadowBlur=0;}
+    // Temposchild "130"
+    const sy=ph*0.14,sr=h*0.21;
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(0,sy,sr,0,7);ctx.fill();
+    ctx.strokeStyle='#cc0000';ctx.lineWidth=3.5;ctx.beginPath();ctx.arc(0,sy,sr,0,7);ctx.stroke();ctx.lineWidth=1;
+    ctx.fillStyle='#111';ctx.font=`bold ${Math.round(sr*1.05)}px sans-serif`;
+    ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('130',0,sy);
     ctx.restore();
   }
 }
@@ -1525,7 +1561,7 @@ function frame(){
     enemies=enemies.filter(e=>e.y<H+h*3&&e.y>-h*10);
     for(let i=0;i<enemies.length;i++){for(let j=i+1;j<enemies.length;j++){if(enemies[i].lane!==enemies[j].lane)continue;const hi=h*(enemies[i].truck?2.35:1),hj=h*(enemies[j].truck?2.35:1);const minD=(hi+hj)*0.5+12;const dy=enemies[j].y-enemies[i].y;if(Math.abs(dy)<minD){if(dy>=0)enemies[j].y=enemies[i].y+minD;else enemies[i].y=enemies[j].y+minD;}}}
     for(const p of pickups){p.y+=eff;
-      if(!p.done&&player.air<=0&&Math.abs(p.x-player.x)<carW()*0.62&&Math.abs(p.y-player.y)<h*0.7){p.done=true;trigger(p.type);}}
+      if(!p.done&&player.air<=0&&Math.abs(p.y-player.y)<h*0.7&&(p.type==='blitzer'||Math.abs(p.x-player.x)<carW()*0.62)){p.done=true;trigger(p.type);}}
     pickups=pickups.filter(p=>p.y<H+h*2&&!p.done);
     for(const q of particles){q.x+=q.vx;q.y+=q.vy+eff*0.25;q.vx*=0.94;q.vy*=0.94;q.life--;}
     particles=particles.filter(q=>q.life>0);
