@@ -409,6 +409,18 @@ const AU=(()=>{
     isMuted(){return muted;},
     setCarProfile(ep){if(ep)carEp=ep;},
     engineStart(ep){ensure();if(engine)return;if(ep)carEp=ep;const t=ac.currentTime;
+      if(carEp.electric){
+        const ew=ac.createOscillator();ew.type='sine';ew.frequency.value=220;
+        const ew2=ac.createOscillator();ew2.type='sine';ew2.frequency.value=440;
+        const ewg=ac.createGain();ewg.gain.value=0.35;ew.connect(ewg);
+        const ewg2=ac.createGain();ewg2.gain.value=0.12;ew2.connect(ewg2);ewg2.connect(ewg);
+        const ewlp=ac.createBiquadFilter();ewlp.type='lowpass';ewlp.frequency.value=1200;
+        ewg.connect(ewlp);
+        const em=ac.createGain();em.gain.value=0.0001;ewlp.connect(em);em.connect(master);
+        ew.start();ew2.start();em.gain.setTargetAtTime(0.055,t,0.4);
+        engine={o1:ew,o2:ew2,sub:null,ns:null,lfo:null,lp:ewlp,body:null,ng:null,em};
+        return;
+      }
       const o1t=carEp.o1t||'sawtooth',o2t=carEp.o2t||'square';
       const o2v=carEp.o2v!=null?carEp.o2v:0.28,sv=carEp.sv!=null?carEp.sv:0.5;
       const lfoT=carEp.lfoT||'sawtooth',bQ=carEp.bQ||5;
@@ -432,16 +444,19 @@ const AU=(()=>{
       engine={o1,o2,sub,ns,lfo,lp,body,ng,em};
     },
     engineStop(){if(!engine)return;const e=engine;engine=null;e.em.gain.setTargetAtTime(0.0001,ac.currentTime,0.12);
-      setTimeout(()=>{try{e.o1.stop();e.o2.stop();e.sub.stop();e.ns.stop();e.lfo.stop();}catch(_){}},450);},
+      setTimeout(()=>{try{e.o1.stop();if(e.o2)e.o2.stop();if(e.sub)e.sub.stop();if(e.ns)e.ns.stop();if(e.lfo)e.lfo.stop();}catch(_){}},450);},
     update(speed,tun){if(!ac)return;
-      if(engine){const t=ac.currentTime;const sp=Math.max(5,speed);const x=(sp-5)/1.2;const frac=x-Math.floor(x);
+      if(engine){const t=ac.currentTime;const sp=Math.max(5,speed);
+        if(carEp.electric){
+          const ef=200+sp*28;engine.o1.frequency.setTargetAtTime(ef,t,0.06);engine.o2.frequency.setTargetAtTime(ef*2.1,t,0.06);engine.lp.frequency.setTargetAtTime(400+sp*60,t,0.1);
+        }else{const x=(sp-5)/1.2;const frac=x-Math.floor(x);
         const f=carEp.baseF+frac*(carEp.baseF*1.2);
         engine.o1.frequency.setTargetAtTime(f,t,0.05);engine.o2.frequency.setTargetAtTime(f*2,t,0.05);
         engine.sub.frequency.setTargetAtTime(f*0.5,t,0.05);engine.lfo.frequency.setTargetAtTime(f,t,0.04);
         engine.body.frequency.setTargetAtTime(carEp.bodyF,t,0.08);
         engine.ng.gain.setTargetAtTime(carEp.noise*(0.7+sp*0.018),t,0.1);
         engine.lp.frequency.setTargetAtTime(Math.max(320,560+sp*120-tun*340),t,0.1);
-        if(carEp.crackle&&Math.random()<0.005&&sp>3){const tc=ac.currentTime;const oc=ac.createOscillator();oc.type='square';oc.frequency.setValueAtTime(75+Math.random()*45,tc);const gc=ac.createGain();gc.gain.setValueAtTime(0.16+Math.random()*0.10,tc);gc.gain.exponentialRampToValueAtTime(0.0001,tc+0.022);oc.connect(gc);gc.connect(master);oc.start(tc);oc.stop(tc+0.03);}}
+        if(carEp.crackle&&Math.random()<0.005&&sp>3){const tc=ac.currentTime;const oc=ac.createOscillator();oc.type='square';oc.frequency.setValueAtTime(75+Math.random()*45,tc);const gc=ac.createGain();gc.gain.setValueAtTime(0.16+Math.random()*0.10,tc);gc.gain.exponentialRampToValueAtTime(0.0001,tc+0.022);oc.connect(gc);gc.connect(master);oc.start(tc);oc.stop(tc+0.03);}}}
       const ct=ac.currentTime;
       wet.gain.setTargetAtTime(tun*0.54,ct,0.1);
       delay.delayTime.setTargetAtTime(0.10+tun*0.20,ct,0.15);
@@ -683,6 +698,17 @@ const CARS=[
    maxKmh:330, rampMul:2.40, handling:0.40,
    desc:'3.0L V6 120° Twin Turbo · 8G F1-DCT · 755 Nm · PHEV 880 PS',
    ep:{baseF:102,bodyF:205,lfoF:98,noise:0.062, o2v:0.34,sv:0.18,bQ:4}},
+  {id:'actros', name:'Mercedes Actros MP5', price:18000, kind:'truck', color:'#d8d0c4',
+   displacement:12809, power:375, ps:510, cylinders:6,
+   maxKmh:90, rampMul:0.30, handling:0.10,
+   desc:'12.8L R6 · Gigaspace · 2.550 Nm',
+   truckPlayer:true,
+   ep:{baseF:42,bodyF:78,lfoF:38,noise:0.095, o1t:'square',o2t:'square',o2v:0.22,sv:0.72,lfoT:'square',bQ:4}},
+  {id:'tesla_ms', name:'Tesla Model S Plaid', price:95000, kind:'sedan', color:'#1a1a2e',
+   displacement:0, power:760, ps:1034, cylinders:0,
+   maxKmh:322, rampMul:2.10, handling:0.36,
+   desc:'Tri-Motor · 1.021 PS · 1.420 Nm · AWD · 0–100 in 2,1s',
+   ep:{baseF:0,bodyF:0,lfoF:0,noise:0, electric:true}},
 ];
 function carDef(id){
   const base=CARS.find(c=>c.id===id)||CARS[0];
@@ -919,6 +945,7 @@ let nightAmt=0;        // 0=Tag, 1=Nacht
 let milestoneReached=new Set();
 let nearMissCount=0;
 let dailyChallenge={date:'',idx:0,progress:0,claimed:false};
+let seasonPass={season:'',tasks:[],claimed:false,unlockedColors:[]};
 let player,enemies=[],signs=[],segIndex=0,segStart=0,tunnelAmt=0;
 let braking=false,brakeDepth=0,brakeFactor=1;
 let pickups=[],particles=[],floats=[],pickupTimer=160,freeUntil=0,flash=0,fc=0;
@@ -1044,12 +1071,12 @@ function trigger(type){
     for(let i=0;i<16;i++){const a=Math.random()*6.283,sp=1.5+Math.random()*4;
       particles.push({x:player.x+(Math.random()-0.5)*cw,y:player.y+(Math.random()-0.5)*ch*0.5,vx:Math.cos(a)*sp*0.8,vy:Math.sin(a)*sp-3,life:28+Math.random()*18,max:46,col:Math.random()<0.6?'#ffd23f':'#ffe87a',r:2.5+Math.random()*3,fire:false});}
   }else if(type==='nitro'){
-    if(player.air>0){nitroUntil=fc+200;} else {nitroUntil=fc+200;}
-    addFloat('NITRO!','#7bdcff');AU.nitro();
+    const nitroDur=carDef(sel).ep&&carDef(sel).ep.electric?400:200;
+    nitroUntil=fc+nitroDur;trackSeason('nitro_count');addFloat('NITRO!','#7bdcff');AU.nitro();
   }else if(type==='blitzer'){
     const kmh=Math.round(eff*18);
     const bonus=Math.max(50,Math.round(kmh*2.5));
-    coins+=bonus;Store.save();
+    coins+=bonus;Store.save();trackSeason('blitzer_count');
     flash=0.88;
     addFloat('BLITZER! +'+bonus.toLocaleString('de-DE'),'#ffe600');AU.blitz();
   }else if(type==='pothole'){
@@ -1582,12 +1609,14 @@ function frame(){
     // Gleicher-Richtungs-Verkehr: NPC fährt mit eigener Geschwindigkeit vorwärts.
     // Beim Bremsen (eff sinkt) zieht der NPC vor dem Spieler weg und verschwindet oben.
     for(const e of enemies){e.y+=eff-speed*(e.speedMul||0.5);if(e.baseX!==undefined)e.x=e.baseX+Math.sin(fc*(e.wobFreq||0.02)+(e.wobPhase||0))*(e.wobAmp||0);const eh=h*(e.truck?2.35:1);
-      if(diff!=='ghost'&&!invuln&&Math.abs(e.x-player.x)<carW()*0.6&&Math.abs(e.y-player.y)<(eh+h)/2*0.82){crash();return;}
+      if(diff!=='ghost'&&!invuln&&Math.abs(e.x-player.x)<carW()*0.6&&Math.abs(e.y-player.y)<(eh+h)/2*0.82){
+        if(carDef(sel).truckPlayer&&!e.truck){boom(e.x,e.y,false);e.done=true;const rn=50+Math.floor(Math.random()*100);coins+=rn;Store.save();addFloat('RAM! +'+rn,'#ff9f1c');continue;}
+        crash();return;}
       // Beinahe-Kollision: NPC passiert Spieler mit knappem Abstand
       if(!e.passed&&e.y>player.y+h*0.55){e.passed=true;
         if(!invuln&&Math.abs(e.x-player.x)<carW()*1.55&&Math.abs(e.x-player.x)>=carW()*0.6){
-          nearMissCount++;const nb=10+Math.round(score/2200)|0;coins+=nb;Store.save();addFloat('Knapp! +'+nb,'#ff9f1c');}}}
-    enemies=enemies.filter(e=>e.y<H+h*3&&e.y>-h*10);
+          nearMissCount++;trackSeason('nearmiss_total');const nb=10+Math.round(score/2200)|0;coins+=nb;Store.save();addFloat('Knapp! +'+nb,'#ff9f1c');}}}
+    enemies=enemies.filter(e=>e.y<H+h*3&&e.y>-h*10&&!e.done);
     for(let i=0;i<enemies.length;i++){for(let j=i+1;j<enemies.length;j++){if(enemies[i].lane!==enemies[j].lane)continue;const hi=h*(enemies[i].truck?2.35:1),hj=h*(enemies[j].truck?2.35:1);const minD=(hi+hj)*0.5+12;const dy=enemies[j].y-enemies[i].y;if(Math.abs(dy)<minD){if(dy>=0)enemies[j].y=enemies[i].y+minD;else enemies[i].y=enemies[j].y+minD;}}}
     for(const p of pickups){p.y+=eff;
       if(!p.done&&player.air<=0&&Math.abs(p.y-player.y)<h*0.7&&(p.type==='blitzer'||Math.abs(p.x-player.x)<carW()*0.62)){p.done=true;trigger(p.type);}}
@@ -1655,8 +1684,8 @@ function frame(){
       polizei.x+=(lanes[polizei.lane]-polizei.x)*0.06;
       polizei.y+=eff-speed*dynMul;
       // Entkommen: Spieler hat genug Abstand geschaffen (Rakete hilft!) oder Timer abgelaufen
-      if(polizei.timer>1200||polizei.y>player.y+ph*12){
-        addFloat('Entkommen!','#4ade80');
+      if(polizei.timer>(carDef(sel).truckPlayer?500:1200)||polizei.y>player.y+ph*12){
+        addFloat('Entkommen!','#4ade80');trackSeason('escape_count');
         polizei=null;polizeiWarning=0;polizeiNextAt=score+Math.round((45+Math.random()*35)*200);
         document.getElementById('polWarn').classList.remove('on');
       } else if(diff!=='ghost'){
@@ -1693,7 +1722,7 @@ function crash(){
   document.getElementById('polWarn').classList.remove('on');polizei=null;polizeiWarning=0;
   const coinMul={chill:1,normal:1.75,brutal:3,ghost:25}[diff]||1;
   const earned=Math.floor(score/2*coinMul*coinMultiplier);coins+=earned;
-  totalKm+=score/200;
+  totalKm+=score/200;trackSeason('totalkm_delta',score/200);
   updateDailyChallengeProgress(score/200,earned);
   checkRunAchievements(score/200,earned);
   Store.save();
