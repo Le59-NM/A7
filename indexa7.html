@@ -1190,7 +1190,7 @@ function drawPickup(p){
     ctx.beginPath();ctx.moveTo(bw/2,bh*0.32);ctx.lineTo(bw*0.9,bh*0.5);ctx.lineTo(bw/2,bh*0.5);ctx.closePath();ctx.fill();
     ctx.globalCompositeOperation='lighter';ctx.fillStyle='rgba(255,160,40,.9)';ctx.beginPath();ctx.moveTo(-bw*0.3,bh*0.5);ctx.lineTo(0,bh*0.5+10+Math.random()*8);ctx.lineTo(bw*0.3,bh*0.5);ctx.closePath();ctx.fill();
     ctx.restore();
-  }else{ // pothole
+  }else if(p.type==='pothole'){
     ctx.save();ctx.translate(x,y);
     ctx.beginPath();for(let i=0;i<p.shape.length;i++){const a=i/p.shape.length*6.283,rad=p.shape[i]*w*0.5;const px=Math.cos(a)*rad,py=Math.sin(a)*rad*1.25;i?ctx.lineTo(px,py):ctx.moveTo(px,py);}ctx.closePath();
     ctx.fillStyle='#cfd0cf';ctx.fill(); // heller Rissrand
