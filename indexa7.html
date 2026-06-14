@@ -251,6 +251,12 @@
             <div class="chal-bar-wrap"><div class="chal-bar-fill" id="chalBar" style="width:0%"></div></div>
             <button class="chal-claim" id="chalClaim" style="display:none">Abholen!</button>
           </div>
+          <div class="chal-card" id="spCard" style="margin-top:8px;">
+            <div class="chal-head"><span class="chal-tag">SAISON-PASS</span><span class="chal-reward" style="font-size:10px;opacity:.6;font-weight:400;" id="spSeason"></span></div>
+            <div class="chal-meta" id="spProgress">0/5 abgeschlossen</div>
+            <div class="chal-bar-wrap"><div class="chal-bar-fill" id="spBar" style="width:0%"></div></div>
+            <button class="chal-claim" id="spClaim" style="display:none;margin-top:4px;">Belohnung abholen · Exklusivfarbe</button>
+          </div>
           <button class="play" id="play">Losfahren</button>
           <div class="btn-row-sec">
             <button class="btn-sm" id="achBtn">Erfolge</button>
@@ -740,6 +746,8 @@ const Store={
     if(dc!=null){try{dailyChallenge=JSON.parse(dc);}catch(e){}}
     if(ach!=null){try{achievements=new Set(JSON.parse(ach));}catch(e){}}
     if(tkm!=null)totalKm=+tkm||0;
+    const sp=await get('a7:season');
+    if(sp!=null){try{seasonPass=JSON.parse(sp);}catch(e){}}
     const mul=await get('a7:coinmul');
     if(mul!=null)coinMultiplier=+mul||1;
     if(!owned||!owned.fiesta){owned=owned||{};owned.fiesta=true;} if(!owned[sel])sel='fiesta';
@@ -750,7 +758,8 @@ const Store={
       ['a7:sel',sel],['a7:bests',JSON.stringify(bests)],['a7:tuning',JSON.stringify(tuning)],
       ['a7:colors',JSON.stringify(carColors)],['a7:daily',JSON.stringify(dailyChallenge)],
       ['a7:ach',JSON.stringify([...achievements])],['a7:totalkm',String(Math.round(totalKm))],
-      ['a7:coinmul',String(coinMultiplier)]];
+      ['a7:coinmul',String(coinMultiplier)],
+      ['a7:season',JSON.stringify(seasonPass)]];
     for(const [k,v] of vals){this._wsPut(k,v);this._lsPut(k,v);}
   }
 };
@@ -763,6 +772,22 @@ function refreshMenuStats(){
   const pb=document.getElementById('prstBadge');
   if(pb){const p=currentPrestige();if(p){pb.textContent=p.name;pb.style.cssText=`background:${p.bg};border:1.5px solid ${p.bd};color:${p.color};display:inline-block;`;pb.classList.add('on');}else{pb.classList.remove('on');}}
   renderDailyChallenge();
+  // Season pass summary badge
+  const spCard=document.getElementById('spCard');
+  if(spCard){
+    initSeasonPass();
+    const spSeason=document.getElementById('spSeason');
+    if(spSeason)spSeason.textContent=seasonPass.season||getSeasonKey();
+    const done=seasonPass.tasks.filter(t=>t.progress>=t.goal).length;
+    const total=seasonPass.tasks.length;
+    document.getElementById('spProgress').textContent=done+'/'+total+' abgeschlossen';
+    document.getElementById('spBar').style.width=Math.round(done/total*100)+'%';
+    const claimBtn=document.getElementById('spClaim');
+    if(claimBtn){
+      const canClaim=done>=total&&!seasonPass.claimed;
+      claimBtn.style.display=canClaim?'block':'none';
+    }
+  }
 }
 
 /* ============ config / state ============ */
@@ -1472,6 +1497,26 @@ const CHALLENGES=[
   {text:'50 km auf Brutal',goal:50,type:'brutal',reward:1200},
   {text:'100 km in einem Run',goal:100,type:'distance',reward:2000},
 ];
+const SEASON_TASKS=[
+  {id:'sp_dist',text:'500 km in einem Monat fahren',type:'totalkm_delta',goal:500},
+  {id:'sp_nitro',text:'25× Nitro benutzen',type:'nitro_count',goal:25},
+  {id:'sp_miss',text:'60× knapp vorbei',type:'nearmiss_total',goal:60},
+  {id:'sp_blitz',text:'20× Blitzer passieren',type:'blitzer_count',goal:20},
+  {id:'sp_police',text:'3× der Polizei entkommen',type:'escape_count',goal:3},
+];
+const SEASON_COLOR='#e85d04';
+function getSeasonKey(){const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1);}
+function initSeasonPass(){
+  const sk=getSeasonKey();
+  if(seasonPass.season!==sk){
+    seasonPass={season:sk,tasks:SEASON_TASKS.map(t=>({...t,progress:0})),claimed:false,unlockedColors:seasonPass.unlockedColors||[]};
+  }
+}
+function seasonPassComplete(){initSeasonPass();return seasonPass.tasks.every(t=>t.progress>=t.goal);}
+function trackSeason(type,n=1){
+  initSeasonPass();
+  seasonPass.tasks.forEach(t=>{if(t.type===type&&t.progress<t.goal)t.progress=Math.min(t.goal,t.progress+n);});
+}
 function getTodayKey(){return new Date().toISOString().slice(0,10);}
 function initDailyChallenge(){
   const today=getTodayKey();
@@ -1854,13 +1899,13 @@ function renderGarage(){
       const colorRow=document.createElement('div');colorRow.className='color-row';
       const p=currentPrestige();
       const unlockedPrstColors=PRESTIGE.filter(t=>totalKm>=t.km).map(t=>t.color);
-      [...COLOR_PRESETS,...PRESTIGE.map(t=>t.color)].forEach((col,idx)=>{
-        const isPrst=idx>=COLOR_PRESETS.length;
+      [...COLOR_PRESETS,...(seasonPass.unlockedColors||[]),...PRESTIGE.map(t=>t.color)].forEach((col,idx)=>{
+        const isPrst=idx>=COLOR_PRESETS.length+(seasonPass.unlockedColors||[]).length;
         const locked=isPrst&&!unlockedPrstColors.includes(col);
         const sw=document.createElement('button');
         sw.className='color-swatch'+((carColors[c.id]||c.color)===col?' active':'')+(locked?' locked':'');
         sw.style.background=col;
-        if(isPrst&&locked){const pr=PRESTIGE[idx-COLOR_PRESETS.length];sw.title=pr.name+' ('+pr.km.toLocaleString('de-DE')+' km gesamt)';}
+        if(isPrst&&locked){const pr=PRESTIGE[idx-COLOR_PRESETS.length-(seasonPass.unlockedColors||[]).length];if(pr)sw.title=pr.name+' ('+pr.km.toLocaleString('de-DE')+' km gesamt)';}
         else sw.title=col;
         if(!locked)sw.onclick=()=>{carColors[c.id]=col;if(sel===c.id){delete spriteCache['P|'+sel];delete spriteCache['P|hit'];}Store.save();AU.click();renderGarage();};
         colorRow.appendChild(sw);
@@ -1994,6 +2039,16 @@ document.getElementById('rvYes').onclick=()=>{
 document.getElementById('achBtn').onclick=openAchievements;
 document.getElementById('achBack').onclick=closeAchievements;
 document.getElementById('shopBtn').onclick=openShop;
+const spClaimBtn=document.getElementById('spClaim');
+if(spClaimBtn)spClaimBtn.onclick=()=>{
+  if(!seasonPassComplete()||seasonPass.claimed)return;
+  seasonPass.claimed=true;
+  if(!seasonPass.unlockedColors)seasonPass.unlockedColors=[];
+  seasonPass.unlockedColors.push(SEASON_COLOR);
+  Store.save();AU.free();
+  addFloat&&addFloat('Saison-Farbe freigeschaltet!','#e85d04');
+  refreshMenuStats();
+};
 Store.load();
 requestAnimationFrame(frame);
 </script>
