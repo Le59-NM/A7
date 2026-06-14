@@ -704,7 +704,7 @@ const CARS=[
    maxKmh:330, rampMul:2.40, handling:0.40,
    desc:'3.0L V6 120° Twin Turbo · 8G F1-DCT · 755 Nm · PHEV 880 PS',
    ep:{baseF:102,bodyF:205,lfoF:98,noise:0.062, o2v:0.34,sv:0.18,bQ:4}},
-  {id:'actros', name:'Mercedes Actros MP5', price:18000, kind:'truck', color:'#d8d0c4',
+  {id:'actros', name:'Mercedes Actros MP5', price:18000, kind:'truck', color:'#d8d0c4', cab:'#1e3a5f',
    displacement:12809, power:375, ps:510, cylinders:6,
    maxKmh:90, rampMul:0.30, handling:0.10,
    desc:'12.8L R6 · Gigaspace · 2.550 Nm',
@@ -716,16 +716,23 @@ const CARS=[
    desc:'Tri-Motor · 1.021 PS · 1.420 Nm · AWD · 0–100 in 2,1s',
    ep:{baseF:0,bodyF:0,lfoF:0,noise:0, electric:true}},
 ];
+const TIRE_DEFS={soft:{label:'Soft',handling:0.08,kmh:0,cost:5000,desc:'+Grip, +Handling'},hard:{label:'Hard',handling:-0.03,kmh:15,cost:5000,desc:'+15 km/h, -Grip'}};
 function carDef(id){
   const base=CARS.find(c=>c.id===id)||CARS[0];
   const t=tuning[id]||{speed:0,handling:0};
   const col=carColors[id]||base.color;
-  return Object.assign({},base,{maxKmh:base.maxKmh+(t.speed||0)*8,handling:base.handling+(t.handling||0)*0.02,color:col});
+  const tire=TIRE_DEFS[t.tire]||{handling:0,kmh:0};
+  return Object.assign({},base,{maxKmh:base.maxKmh+(t.speed||0)*8+tire.kmh,handling:base.handling+(t.handling||0)*0.02+tire.handling,color:col});
 }
 let coins=0, owned={fiesta:true}, sel='fiesta';
-function buildSkinSprite(def,w,h){const c=document.createElement('canvas');c.width=w;c.height=h;
+function buildSkinSprite(def,w,h){
   const col=carColors[def.id]||def.color;
-  drawCarBody(c.getContext('2d'),w,h,w*0.06,def.kind,col,def.roof,def.stripe);return c;}
+  const isTruck=def.kind==='truck';
+  const th=isTruck?Math.round(h*2.35):h;
+  const c=document.createElement('canvas');c.width=w;c.height=th;const g=c.getContext('2d');
+  if(isTruck){drawTruck(g,w,th,w*0.06,col,def.cab||'#2c3e50');}
+  else{drawCarBody(g,w,th,w*0.06,def.kind,col,def.roof,def.stripe);}
+  return c;}
 
 const Store={
   async _lsGet(k){try{return localStorage.getItem(k);}catch(e){return null;}},
@@ -1096,7 +1103,8 @@ function trigger(type){
     for(let i=0;i<16;i++){const a=Math.random()*6.283,sp=1.5+Math.random()*4;
       particles.push({x:player.x+(Math.random()-0.5)*cw,y:player.y+(Math.random()-0.5)*ch*0.5,vx:Math.cos(a)*sp*0.8,vy:Math.sin(a)*sp-3,life:28+Math.random()*18,max:46,col:Math.random()<0.6?'#ffd23f':'#ffe87a',r:2.5+Math.random()*3,fire:false});}
   }else if(type==='nitro'){
-    const nitroDur=carDef(sel).ep&&carDef(sel).ep.electric?400:200;
+    const ntLvl=(tuning['_global']?.nitro_tank||0);
+    const nitroDur=(carDef(sel).ep&&carDef(sel).ep.electric?400:200)+ntLvl*50;
     nitroUntil=fc+nitroDur;trackSeason('nitro_count');addFloat('NITRO!','#7bdcff');AU.nitro();
   }else if(type==='blitzer'){
     const kmh=Math.round(eff*18);
@@ -1150,11 +1158,13 @@ function drawPlayerCar(){
   // Schatten (im Sprung weiter weg + heller)
   ctx.save();ctx.globalAlpha=0.34-air*0.18;ctx.fillStyle='#000';
   rr(ctx,x-w/2+4+air*10,y-h/2+5+air*16,w,h,w*0.24);ctx.fill();ctx.restore();
+  const isTruckP=carDef(sel).kind==='truck';
+  const ph=isTruckP?h*2.35:h;
   const key=player.hit>0?'P|hit':'P|'+sel;
   const s=spriteCache[key]||(spriteCache[key]= player.hit>0
       ? buildSkinSprite({kind:carDef(sel).kind,color:'#7a2233'},Math.round(carW()*SS),Math.round(carH()*SS))
       : buildSkinSprite(carDef(sel),Math.round(carW()*SS),Math.round(carH()*SS)));
-  ctx.save();ctx.translate(x,y);ctx.rotate(player.wob);ctx.scale(sc,sc);ctx.drawImage(s,-w/2,-h/2,w,h);ctx.restore();
+  ctx.save();ctx.translate(x,y);ctx.rotate(player.wob);ctx.scale(sc,sc);ctx.drawImage(s,-w/2,-ph/2,w,ph);ctx.restore();
   if(braking){ctx.save();ctx.globalCompositeOperation='lighter';[-0.26,0.26].forEach(o=>{const bx=x+w*o,by=y+h*0.37;const g=ctx.createRadialGradient(bx,by,1,bx,by,w*0.52);g.addColorStop(0,'rgba(255,28,8,0.95)');g.addColorStop(1,'rgba(255,28,8,0)');ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(bx,by,w*0.52,h*0.13,0,0,7);ctx.fill();});ctx.restore();}
   if(diff==='ghost')ctx.restore();
 }
@@ -1868,6 +1878,7 @@ muteBtn.onclick=()=>{AU.resume();AU.setMuted(!AU.isMuted());renderMute();};
 renderMute();
 const COLOR_PRESETS=['#edeef0','#c0392b','#2563a8','#1f8a6d','#111418','#f4a020','#7b2d8b','#a07850'];
 const TUNE_COSTS={speed:[800,2000,4500],handling:[600,1500,3500]};
+const NITRO_TANK_COSTS=[5000,12000,25000];
 function renderGarage(){
   document.getElementById('grgCoins').textContent=Math.round(coins).toLocaleString('de-DE');
   const grid=document.getElementById('garageGrid');grid.innerHTML='';
@@ -1927,6 +1938,23 @@ function renderGarage(){
         }
         row.appendChild(lbl);row.appendChild(stars);row.appendChild(btn);tunSec.appendChild(row);
       });info.appendChild(tunSec);
+      // Reifenwahl
+      const tireRow=document.createElement('div');tireRow.className='tun-row';tireRow.style.cssText='flex-wrap:wrap;gap:5px;align-items:center;margin-top:4px;';
+      const tireLbl=document.createElement('span');tireLbl.className='tun-lbl';tireLbl.textContent='Reifen';tireRow.appendChild(tireLbl);
+      ['soft','hard'].forEach(tid=>{
+        const td=TIRE_DEFS[tid];const active=tun.tire===tid;
+        const hasTire=tun['tire_'+tid];
+        const tbtn=document.createElement('button');tbtn.className='tun-btn'+(active?' on':'');
+        if(!hasTire){tbtn.textContent=td.label+' · '+td.cost.toLocaleString('de-DE');
+          tbtn.onclick=()=>{if(coins>=td.cost){coins-=td.cost;if(!tuning[c.id])tuning[c.id]={speed:0,handling:0};tuning[c.id]['tire_'+tid]=true;tuning[c.id].tire=tid;Store.save();AU.free();renderGarage();}else{AU.pothole();}};
+        }else{tbtn.textContent=td.label+(active?' ✓':'');tbtn.title=td.desc;
+          tbtn.onclick=()=>{if(!tuning[c.id])tuning[c.id]={};tuning[c.id].tire=active?null:tid;Store.save();AU.click();renderGarage();};
+        }
+        tireRow.appendChild(tbtn);
+      });
+      const stdBtn=document.createElement('button');stdBtn.className='tun-btn'+((!tun.tire)?' on':'');stdBtn.textContent='Standard';
+      stdBtn.onclick=()=>{if(tuning[c.id])tuning[c.id].tire=null;Store.save();AU.click();renderGarage();};
+      tireRow.appendChild(stdBtn);info.appendChild(tireRow);
     }else{
       const priceEl=document.createElement('div');
       priceEl.style.cssText='font-size:19px;font-weight:900;color:#ffd23f;margin:8px 0 2px;';
@@ -1961,6 +1989,23 @@ function renderGarage(){
     mulInfo.appendChild(mbtn);
   }else{const mx=document.createElement('div');mx.style.cssText='text-align:center;color:#4ade80;font-weight:700;font-size:15px;padding:6px 0;';mx.textContent='MAXIMAL';mulInfo.appendChild(mx);}
   mulCard.appendChild(mulInfo);grid.appendChild(mulCard);
+  // Nitro-Tank Karte (global)
+  const ntCard=document.createElement('div');ntCard.className='acard';
+  const ntInfo=document.createElement('div');ntInfo.className='ainfo';
+  const ntTitle=document.createElement('div');ntTitle.className='aname';ntTitle.textContent='Nitro-Tank';ntInfo.appendChild(ntTitle);
+  const ntLvlNow=(tuning['_global']?.nitro_tank||0);
+  const ntSub=document.createElement('div');ntSub.className='adesc';
+  ntSub.textContent='Verlängert jede Nitro-Boost um +50 Frames pro Stufe';ntInfo.appendChild(ntSub);
+  const ntStars=document.createElement('div');ntStars.style.cssText='font-size:20px;text-align:center;margin:8px 0 4px;letter-spacing:4px;';
+  ntStars.textContent='⚡'.repeat(ntLvlNow)+'○'.repeat(3-ntLvlNow);ntInfo.appendChild(ntStars);
+  const ntBase=document.createElement('div');ntBase.style.cssText='font-size:11px;color:#7a8878;text-align:center;margin-bottom:8px;';
+  ntBase.textContent='Basis 200 Frames + '+(ntLvlNow*50)+' = '+(200+ntLvlNow*50)+' Frames (Tesla ×2)';ntInfo.appendChild(ntBase);
+  if(ntLvlNow<3){const nc=NITRO_TANK_COSTS[ntLvlNow];const ntBtn=document.createElement('button');ntBtn.className='cbtn buy';
+    ntBtn.textContent='Upgrade Stufe '+(ntLvlNow+1)+' · '+nc.toLocaleString('de-DE')+' Coins';
+    ntBtn.onclick=()=>{if(coins>=nc){coins-=nc;if(!tuning['_global'])tuning['_global']={};tuning['_global'].nitro_tank=(tuning['_global'].nitro_tank||0)+1;Store.save();AU.free();renderGarage();}else{AU.pothole();ntCard.classList.add('shake');setTimeout(()=>ntCard.classList.remove('shake'),300);}};
+    ntInfo.appendChild(ntBtn);
+  }else{const nm=document.createElement('div');nm.style.cssText='text-align:center;color:#4ade80;font-weight:700;font-size:15px;padding:6px 0;';nm.textContent='MAXIMAL · 350 Frames';ntInfo.appendChild(nm);}
+  ntCard.appendChild(ntInfo);grid.appendChild(ntCard);
 }
 let menuPage=0;
 function goToPage(n,animate){
