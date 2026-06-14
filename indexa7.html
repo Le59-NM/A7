@@ -66,9 +66,10 @@
   .stats .v.gold{color:#ffd23f;}
   .ghost2{background:rgba(255,255,255,.12)!important;color:#fff!important;border:1.5px solid rgba(255,255,255,.4)!important;box-shadow:none!important;font-size:13px!important;padding:12px 0!important;backdrop-filter:blur(4px);}
   #menu{overflow:hidden;padding:0 !important;}
-  #pagesWrap{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;width:200%;transition:transform .35s cubic-bezier(.25,.46,.45,.94);pointer-events:auto;}
-  .mpage{width:50%;height:100%;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:52px 26px 36px;}
+  #pagesWrap{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;width:300%;transition:transform .35s cubic-bezier(.25,.46,.45,.94);pointer-events:auto;}
+  .mpage{width:33.333%;height:100%;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:52px 26px 36px;}
   #pageGarage{padding:0;justify-content:flex-start;}
+  #pageUpgrades{padding:0;justify-content:flex-start;}
   #pageDots{position:absolute;bottom:calc(14px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:30;pointer-events:none;}
   .pdot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.25);transition:background .2s,transform .2s;}
   .pdot.active{background:rgba(255,255,255,.9);transform:scale(1.25);}
@@ -268,15 +269,25 @@
       <div class="mpage" id="pageGarage">
         <div class="shopwrap">
           <div class="shophead">
-            <span class="stitle">Autos</span>
+            <span class="stitle">Garage</span>
             <span class="balance">Coins <b id="grgCoins">0</b></span>
           </div>
           <div id="garageGrid" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:2px 2px 80px;"></div>
         </div>
       </div>
+      <div class="mpage" id="pageUpgrades">
+        <div class="shopwrap">
+          <div class="shophead">
+            <span class="stitle">Upgrades</span>
+            <span class="balance">Coins <b id="upgCoins">0</b></span>
+          </div>
+          <div id="upgradesGrid" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:2px 2px 80px;"></div>
+        </div>
+      </div>
     </div>
     <div id="pageDots">
       <span class="pdot active"></span>
+      <span class="pdot"></span>
       <span class="pdot"></span>
     </div>
   </div>
@@ -785,6 +796,7 @@ function refreshMenuStats(){
   const rc=document.getElementById('rec');if(rc)rc.textContent=b>0?kmTxt(b):'—';
   const cc=document.getElementById('coins');if(cc)cc.textContent=Math.round(coins).toLocaleString('de-DE');
   const gc=document.getElementById('grgCoins');if(gc)gc.textContent=Math.round(coins).toLocaleString('de-DE');
+  const uc=document.getElementById('upgCoins');if(uc)uc.textContent=Math.round(coins).toLocaleString('de-DE');
   const pb=document.getElementById('prstBadge');
   if(pb){const p=currentPrestige();if(p){pb.textContent=p.name;pb.style.cssText=`background:${p.bg};border:1.5px solid ${p.bd};color:${p.color};display:inline-block;`;pb.classList.add('on');}else{pb.classList.remove('on');}}
   renderDailyChallenge();
@@ -1094,18 +1106,21 @@ function dust(x,y){for(let i=0;i<10;i++){const a=Math.random()*6.283,sp=1+Math.r
 function trigger(type){
   if(type==='ramp'){
     if(player.air>0)return;
-    const m=Math.round(500+Math.random()*1500);     // 500–2000 m
-    const dur=Math.round((0.9+(m-500)/1500*1.1)*60); // längere Sprünge dauern länger
-    player.air=0.001; player.jumpDur=dur; player.jumpBoost=(m/5)/dur;  // Strecke wird in Echtzeit geflogen
+    const _pRamp=tuning['_global']?.pups?.ramp||0;
+    const m=Math.round(500+Math.random()*1500*(1+_pRamp*0.25));
+    const dur=Math.round((0.9+(m-500)/1500*1.1)*60);
+    player.air=0.001; player.jumpDur=dur; player.jumpBoost=(m/5)/dur;
     addFloat('+'+m+' m','#7bdcff'); AU.jump();
   }else if(type==='rocket'){
     // alle Autos vor dem Spieler sprengen
     for(const e of enemies){ if(e.y<player.y) boom(e.x,e.y,e.truck); }
     enemies=enemies.filter(e=>e.y>=player.y);
-    freeUntil=score+M2S(1000);                        // 1000 m freie Fahrt
+    const _pRocket=tuning['_global']?.pups?.rocket||0;
+    freeUntil=score+M2S(1000+_pRocket*250);
     flash=1; addFloat('FREIE FAHRT','#ffd23f'); AU.rocket(); AU.free();
   }else if(type==='coins'){
-    const n=300+Math.floor(Math.random()*1200);
+    const _pCoins=tuning['_global']?.pups?.coins||0;
+    const n=Math.round((300+Math.floor(Math.random()*1200))*(1+_pCoins*0.30));
     coins+=n;Store.save();
     addFloat('+'+n.toLocaleString('de-DE')+' Coins','#ffd23f');AU.free();
     const cw=carW(),ch=carH();
@@ -1117,7 +1132,8 @@ function trigger(type){
     nitroUntil=fc+nitroDur;trackSeason('nitro_count');addFloat('NITRO!','#7bdcff');AU.nitro();
   }else if(type==='blitzer'){
     const kmh=Math.round(eff*18);
-    const bonus=Math.max(50,Math.round(kmh*2.5));
+    const _pBlitz=tuning['_global']?.pups?.blitzer||0;
+    const bonus=Math.max(50,Math.round(kmh*(2.5+_pBlitz*0.6)));
     coins+=bonus;Store.save();trackSeason('blitzer_count');
     flash=0.88;
     addFloat('BLITZER! +'+bonus.toLocaleString('de-DE'),'#ffe600');AU.blitz();
@@ -1994,59 +2010,81 @@ function renderGarage(){
     }
     info.appendChild(btn);card.appendChild(info);grid.appendChild(card);
   }
-  // Coin-Multiplikator Karte
+}
+function renderUpgrades(){
+  document.getElementById('upgCoins').textContent=Math.round(coins).toLocaleString('de-DE');
+  const grid=document.getElementById('upgradesGrid');grid.innerHTML='';
+
+  // ── GLOBALE FAHRZEUG-UPGRADES ──────────────────────────
+  const secA=document.createElement('div');secA.className='aname';secA.style.cssText='color:#ffd23f;font-size:12px;letter-spacing:1px;padding:4px 0 8px;';secA.textContent='GLOBALE FAHRZEUG-UPGRADES';grid.appendChild(secA);
+
+  // Coin-Multiplikator
   const mulCard=document.createElement('div');mulCard.className='acard';
   const mulInfo=document.createElement('div');mulInfo.className='ainfo';
   const mulTitle=document.createElement('div');mulTitle.className='aname';mulTitle.textContent='Coin-Multiplikator';mulInfo.appendChild(mulTitle);
   const mulSub=document.createElement('div');mulSub.className='adesc';mulSub.textContent='Erhöht alle Run-Einnahmen dauerhaft';mulInfo.appendChild(mulSub);
-  const curMulEl=document.createElement('div');curMulEl.style.cssText='font-size:30px;font-weight:900;color:#ffd23f;text-align:center;margin:10px 0 6px;';
-  curMulEl.textContent='×'+coinMultiplier.toFixed(2).replace('.00','').replace('.','\,');mulInfo.appendChild(curMulEl);
+  const curMulEl=document.createElement('div');curMulEl.style.cssText='font-size:28px;font-weight:900;color:#ffd23f;text-align:center;margin:8px 0 4px;';
+  curMulEl.textContent='×'+coinMultiplier.toFixed(2).replace('.00','').replace('.',',');mulInfo.appendChild(curMulEl);
   const nxt=COINMUL_TIERS.find(t=>t.mul>coinMultiplier);
-  if(nxt){
-    const mbtn=document.createElement('button');mbtn.className='cbtn buy';
-    mbtn.textContent='Upgrade → '+nxt.label+' · '+nxt.cost.toLocaleString('de-DE')+' Coins';
-    mbtn.onclick=()=>{if(coins>=nxt.cost){coins-=nxt.cost;coinMultiplier=nxt.mul;Store.save();AU.free();renderGarage();}else{AU.pothole();mulCard.classList.add('shake');setTimeout(()=>mulCard.classList.remove('shake'),300);}};
-    mulInfo.appendChild(mbtn);
-  }else{const mx=document.createElement('div');mx.style.cssText='text-align:center;color:#4ade80;font-weight:700;font-size:15px;padding:6px 0;';mx.textContent='MAXIMAL';mulInfo.appendChild(mx);}
+  if(nxt){const mbtn=document.createElement('button');mbtn.className='cbtn buy';mbtn.textContent='Upgrade → '+nxt.label+' · '+nxt.cost.toLocaleString('de-DE')+' Coins';mbtn.onclick=()=>{if(coins>=nxt.cost){coins-=nxt.cost;coinMultiplier=nxt.mul;Store.save();AU.free();renderUpgrades();}else{AU.pothole();mulCard.classList.add('shake');setTimeout(()=>mulCard.classList.remove('shake'),300);}};mulInfo.appendChild(mbtn);}
+  else{const mx=document.createElement('div');mx.style.cssText='text-align:center;color:#4ade80;font-weight:700;font-size:14px;padding:6px 0;';mx.textContent='MAXIMAL';mulInfo.appendChild(mx);}
   mulCard.appendChild(mulInfo);grid.appendChild(mulCard);
-  // Nitro-Tank Karte (global)
+
+  // Nitro-Tank
   const ntCard=document.createElement('div');ntCard.className='acard';
   const ntInfo=document.createElement('div');ntInfo.className='ainfo';
   const ntTitle=document.createElement('div');ntTitle.className='aname';ntTitle.textContent='Nitro-Tank';ntInfo.appendChild(ntTitle);
   const ntLvlNow=(tuning['_global']?.nitro_tank||0);
-  const ntSub=document.createElement('div');ntSub.className='adesc';
-  ntSub.textContent='Verlängert jede Nitro-Boost um +50 Frames pro Stufe';ntInfo.appendChild(ntSub);
-  const ntStars=document.createElement('div');ntStars.style.cssText='font-size:20px;text-align:center;margin:8px 0 4px;letter-spacing:4px;';
-  ntStars.textContent='⚡'.repeat(ntLvlNow)+'○'.repeat(3-ntLvlNow);ntInfo.appendChild(ntStars);
-  const ntBase=document.createElement('div');ntBase.style.cssText='font-size:11px;color:#7a8878;text-align:center;margin-bottom:8px;';
-  ntBase.textContent='Basis 200 Frames + '+(ntLvlNow*50)+' = '+(200+ntLvlNow*50)+' Frames (Tesla ×2)';ntInfo.appendChild(ntBase);
-  if(ntLvlNow<3){const nc=NITRO_TANK_COSTS[ntLvlNow];const ntBtn=document.createElement('button');ntBtn.className='cbtn buy';
-    ntBtn.textContent='Upgrade Stufe '+(ntLvlNow+1)+' · '+nc.toLocaleString('de-DE')+' Coins';
-    ntBtn.onclick=()=>{if(coins>=nc){coins-=nc;if(!tuning['_global'])tuning['_global']={};tuning['_global'].nitro_tank=(tuning['_global'].nitro_tank||0)+1;Store.save();AU.free();renderGarage();}else{AU.pothole();ntCard.classList.add('shake');setTimeout(()=>ntCard.classList.remove('shake'),300);}};
-    ntInfo.appendChild(ntBtn);
-  }else{const nm=document.createElement('div');nm.style.cssText='text-align:center;color:#4ade80;font-weight:700;font-size:15px;padding:6px 0;';nm.textContent='MAXIMAL · 350 Frames';ntInfo.appendChild(nm);}
+  const ntSub=document.createElement('div');ntSub.className='adesc';ntSub.textContent='Verlängert jede Nitro-Boost um +50 Frames pro Stufe';ntInfo.appendChild(ntSub);
+  const ntStars=document.createElement('div');ntStars.style.cssText='font-size:20px;text-align:center;margin:8px 0 4px;letter-spacing:4px;';ntStars.textContent='⚡'.repeat(ntLvlNow)+'○'.repeat(3-ntLvlNow);ntInfo.appendChild(ntStars);
+  const ntBase=document.createElement('div');ntBase.style.cssText='font-size:11px;color:#7a8878;text-align:center;margin-bottom:8px;';ntBase.textContent='Basis 200 + '+(ntLvlNow*50)+' = '+(200+ntLvlNow*50)+' Frames (Tesla ×2)';ntInfo.appendChild(ntBase);
+  if(ntLvlNow<3){const nc=NITRO_TANK_COSTS[ntLvlNow];const ntBtn=document.createElement('button');ntBtn.className='cbtn buy';ntBtn.textContent='Stufe '+(ntLvlNow+1)+' · '+nc.toLocaleString('de-DE')+' Coins';ntBtn.onclick=()=>{if(coins>=nc){coins-=nc;if(!tuning['_global'])tuning['_global']={};tuning['_global'].nitro_tank=(tuning['_global'].nitro_tank||0)+1;Store.save();AU.free();renderUpgrades();}else{AU.pothole();ntCard.classList.add('shake');setTimeout(()=>ntCard.classList.remove('shake'),300);}};ntInfo.appendChild(ntBtn);}
+  else{const nm=document.createElement('div');nm.style.cssText='text-align:center;color:#4ade80;font-weight:700;font-size:14px;padding:6px 0;';nm.textContent='MAXIMAL · 350 Frames';ntInfo.appendChild(nm);}
   ntCard.appendChild(ntInfo);grid.appendChild(ntCard);
-  // ECU-Chip (global, einmalig)
+
+  // ECU-Chip
   const ecuCard=document.createElement('div');ecuCard.className='acard';
   const ecuInfo=document.createElement('div');ecuInfo.className='ainfo';
   const ecuTitle=document.createElement('div');ecuTitle.className='aname';ecuTitle.textContent='ECU-Chip';ecuInfo.appendChild(ecuTitle);
-  const ecuSub=document.createElement('div');ecuSub.className='adesc';ecuSub.textContent='+10 km/h Höchstgeschwindigkeit auf alle Fahrzeuge dauerhaft';ecuInfo.appendChild(ecuSub);
-  if(!tuning['_global']?.ecu){
-    const ecuBtn=document.createElement('button');ecuBtn.className='cbtn buy';ecuBtn.textContent='Freischalten · 30.000 Coins';
-    ecuBtn.onclick=()=>{if(coins>=30000){coins-=30000;if(!tuning['_global'])tuning['_global']={};tuning['_global'].ecu=true;Store.save();AU.free();renderGarage();}else{AU.pothole();ecuCard.classList.add('shake');setTimeout(()=>ecuCard.classList.remove('shake'),300);}};
-    ecuInfo.appendChild(ecuBtn);
-  }else{const ecuDone=document.createElement('div');ecuDone.style.cssText='text-align:center;color:#4ade80;font-weight:700;font-size:15px;padding:6px 0;';ecuDone.textContent='+10 km/h aktiv ✓';ecuInfo.appendChild(ecuDone);}
+  const ecuSub=document.createElement('div');ecuSub.className='adesc';ecuSub.textContent='+10 km/h auf alle Fahrzeuge dauerhaft';ecuInfo.appendChild(ecuSub);
+  if(!tuning['_global']?.ecu){const ecuBtn=document.createElement('button');ecuBtn.className='cbtn buy';ecuBtn.textContent='Freischalten · 30.000 Coins';ecuBtn.onclick=()=>{if(coins>=30000){coins-=30000;if(!tuning['_global'])tuning['_global']={};tuning['_global'].ecu=true;Store.save();AU.free();renderUpgrades();}else{AU.pothole();ecuCard.classList.add('shake');setTimeout(()=>ecuCard.classList.remove('shake'),300);}};ecuInfo.appendChild(ecuBtn);}
+  else{const ecuDone=document.createElement('div');ecuDone.style.cssText='text-align:center;color:#4ade80;font-weight:700;font-size:14px;padding:6px 0;';ecuDone.textContent='+10 km/h aktiv ✓';ecuInfo.appendChild(ecuDone);}
   ecuCard.appendChild(ecuInfo);grid.appendChild(ecuCard);
+
+  // ── POWER-UP UPGRADES ──────────────────────────────────
+  const secB=document.createElement('div');secB.className='aname';secB.style.cssText='color:#ffd23f;font-size:12px;letter-spacing:1px;padding:12px 0 8px;';secB.textContent='POWER-UP UPGRADES';grid.appendChild(secB);
+
+  const pups=tuning['_global']?.pups||{};
+  const PUP_UPGRADES=[
+    {id:'ramp',  name:'Rampe',   desc:'Sprungweite +25% pro Stufe',          costs:[1500,3500,7500]},
+    {id:'rocket',name:'Rakete',  desc:'Freie Fahrt +250m pro Stufe',          costs:[2000,5000,10000]},
+    {id:'coins', name:'Münzen',  desc:'Münzregen-Betrag +30% pro Stufe',      costs:[1200,3000,6000]},
+    {id:'blitzer',name:'Blitzer',desc:'Blitzer-Multiplikator +0,6× pro Stufe',costs:[1800,4000,8000]},
+  ];
+  for(const pu of PUP_UPGRADES){
+    const lvl=pups[pu.id]||0;
+    const pc=document.createElement('div');pc.className='acard';
+    const pi=document.createElement('div');pi.className='ainfo';
+    const pname=document.createElement('div');pname.className='aname';pname.textContent=pu.name;pi.appendChild(pname);
+    const pdesc=document.createElement('div');pdesc.className='adesc';pdesc.textContent=pu.desc;pi.appendChild(pdesc);
+    const pstars=document.createElement('div');pstars.style.cssText='font-size:18px;text-align:center;margin:6px 0 4px;letter-spacing:4px;';pstars.textContent='★'.repeat(lvl)+'☆'.repeat(3-lvl);pi.appendChild(pstars);
+    if(lvl<3){const cost=pu.costs[lvl];const pbtn=document.createElement('button');pbtn.className='cbtn buy';pbtn.textContent='Stufe '+(lvl+1)+' · '+cost.toLocaleString('de-DE')+' Coins';
+      pbtn.onclick=()=>{if(coins>=cost){coins-=cost;if(!tuning['_global'])tuning['_global']={};if(!tuning['_global'].pups)tuning['_global'].pups={};tuning['_global'].pups[pu.id]=(tuning['_global'].pups[pu.id]||0)+1;Store.save();AU.free();renderUpgrades();}else{AU.pothole();pc.classList.add('shake');setTimeout(()=>pc.classList.remove('shake'),300);}};
+      pi.appendChild(pbtn);
+    }else{const pm=document.createElement('div');pm.style.cssText='text-align:center;color:#4ade80;font-weight:700;font-size:14px;padding:6px 0;';pm.textContent='MAXIMAL';pi.appendChild(pm);}
+    pc.appendChild(pi);grid.appendChild(pc);
+  }
 }
 let menuPage=0;
 function goToPage(n,animate){
   menuPage=n;
   const pw=document.getElementById('pagesWrap');
   if(animate===false)pw.style.transition='none';
-  pw.style.transform='translateX('+(-n*50)+'%)';
+  pw.style.transform='translateX('+(-n*33.333)+'%)';
   if(animate===false)requestAnimationFrame(()=>{pw.style.transition='';});
   document.querySelectorAll('.pdot').forEach((d,i)=>d.classList.toggle('active',i===n));
   if(n===1)renderGarage();
+  if(n===2)renderUpgrades();
 }
 (()=>{
   const pw=document.getElementById('pagesWrap');
@@ -2061,8 +2099,8 @@ function goToPage(n,animate){
     if(sx===null)return;
     const dx=e.clientX-sx;sx=null;
     if(Math.abs(dx)<40)return;
-    if(dx<0&&menuPage===0)goToPage(1);
-    else if(dx>0&&menuPage===1)goToPage(0);
+    if(dx<0&&menuPage<2)goToPage(menuPage+1);
+    else if(dx>0&&menuPage>0)goToPage(menuPage-1);
   });
   pw.addEventListener('pointercancel',()=>{sx=null;});
 })();
