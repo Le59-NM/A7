@@ -1219,24 +1219,35 @@ function drawPickup(p){
   }else if(p.type==='nitro'){
     const bob=Math.sin(fc*0.16)*3;
     ctx.save();ctx.translate(x,y+bob);
-    // Elektrischer Glow
+    // N₂O Flasche (blauer Zylinder mit weißem Label)
     ctx.globalCompositeOperation='lighter';
-    const gl=ctx.createRadialGradient(0,0,3,0,0,w*0.74);
-    gl.addColorStop(0,'rgba(100,200,255,.48)');gl.addColorStop(1,'rgba(60,140,255,0)');
-    ctx.fillStyle=gl;ctx.beginPath();ctx.arc(0,0,w*0.74,0,7);ctx.fill();
+    const gl=ctx.createRadialGradient(0,0,2,0,0,w*0.72);
+    gl.addColorStop(0,'rgba(40,180,255,.40)');gl.addColorStop(1,'rgba(20,100,255,0)');
+    ctx.fillStyle=gl;ctx.beginPath();ctx.arc(0,0,w*0.72,0,7);ctx.fill();
     ctx.globalCompositeOperation='source-over';
-    // Blitz-Bolt
-    const bh=h*0.58;
-    ctx.fillStyle='#7bdcff';ctx.shadowBlur=12;ctx.shadowColor='#4aabff';
-    ctx.beginPath();
-    ctx.moveTo(w*0.09,-bh*0.50);   // Spitze oben
-    ctx.lineTo(-w*0.14,-bh*0.02);  // Mitte links
-    ctx.lineTo(w*0.04,-bh*0.02);   // Mitte rechts (Knick)
-    ctx.lineTo(-w*0.10, bh*0.50);  // Spitze unten
-    ctx.lineTo(w*0.14, bh*0.04);   // zurück rechts oben
-    ctx.lineTo(-w*0.02, bh*0.04);  // innerer Knick
-    ctx.closePath();ctx.fill();
-    ctx.shadowBlur=0;
+    const cw=w*0.38,ch=h*0.72;
+    // Zylinder-Körper
+    const cg=ctx.createLinearGradient(-cw/2,0,cw/2,0);
+    cg.addColorStop(0,'#0a3a7a');cg.addColorStop(0.35,'#1a6fd4');cg.addColorStop(0.65,'#2a8fff');cg.addColorStop(1,'#0a3a7a');
+    rr(ctx,-cw/2,-ch/2,cw,ch,cw*0.42);ctx.fillStyle=cg;ctx.fill();
+    // Ventil oben
+    ctx.fillStyle='#c0c8d8';
+    rr(ctx,-cw*0.18,-ch/2-ch*0.10,cw*0.36,ch*0.12,cw*0.10);ctx.fill();
+    ctx.fillStyle='#e8edf5';
+    rr(ctx,-cw*0.08,-ch/2-ch*0.18,cw*0.16,ch*0.10,cw*0.06);ctx.fill();
+    // Weißes Label-Band in der Mitte
+    const lh=ch*0.38;
+    ctx.fillStyle='rgba(255,255,255,0.92)';
+    rr(ctx,-cw/2,-lh/2,cw,lh,cw*0.06);ctx.fill();
+    // "N₂O" Text
+    ctx.fillStyle='#0a2d6e';ctx.font=`bold ${Math.round(cw*0.58)}px monospace`;
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('N₂O',0,0);
+    // Highlight-Streifen
+    ctx.globalCompositeOperation='lighter';
+    ctx.fillStyle='rgba(180,220,255,0.18)';
+    rr(ctx,-cw*0.42,-ch/2+ch*0.06,cw*0.22,ch*0.82,cw*0.11);ctx.fill();
+    ctx.globalCompositeOperation='source-over';
     ctx.restore();
   }else if(p.type==='oil'){
     ctx.save();ctx.translate(x,y);
