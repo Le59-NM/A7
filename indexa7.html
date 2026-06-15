@@ -1690,6 +1690,7 @@ function frame(){
     // Beim Bremsen (eff sinkt) zieht der NPC vor dem Spieler weg und verschwindet oben.
     for(const e of enemies){e.y+=eff-speed*(e.speedMul||0.5);if(e.baseX!==undefined)e.x=e.baseX+Math.sin(fc*(e.wobFreq||0.02)+(e.wobPhase||0))*(e.wobAmp||0);const eh=h*(e.truck?2.35:1);
       if(diff!=='ghost'&&!invuln&&Math.abs(e.x-player.x)<carW()*0.6&&Math.abs(e.y-player.y)<(eh+h)/2*0.82){
+        if(fc<nitroUntil&&player.air<=0){boom(e.x,e.y,false);e.done=true;addFloat('BOOM!','#7bdcff');continue;}
         if(carDef(sel).truckPlayer&&!e.truck){boom(e.x,e.y,false);e.done=true;const rn=50+Math.floor(Math.random()*100);coins+=rn;Store.save();addFloat('RAM! +'+rn,'#ff9f1c');continue;}
         crash();return;}
       // Beinahe-Kollision: NPC passiert Spieler mit knappem Abstand
@@ -1770,7 +1771,9 @@ function frame(){
         document.getElementById('polWarn').classList.remove('on');
       } else if(diff!=='ghost'){
         const onScreen=polizei.y>=0&&polizei.y<H;
-        if(onScreen&&Math.abs(polizei.x-player.x)<pw*0.65&&Math.abs(polizei.y-player.y)<ph*0.88){crash();return;}
+        if(onScreen&&Math.abs(polizei.x-player.x)<pw*0.65&&Math.abs(polizei.y-player.y)<ph*0.88){
+          if(fc<nitroUntil&&player.air<=0){boom(polizei.x,polizei.y,false);polizei=null;polizeiWarning=0;document.getElementById('polWarn').classList.remove('on');addFloat('BOOM! Polizei!','#7bdcff');}
+          else{crash();return;}}
         const behind=onScreen&&polizei.y>player.y&&polizei.y<player.y+ph*4;
         if(behind&&Math.abs(polizei.x-player.x)<pw*2){
           polizeiWarning++;if(polizeiWarning>260){addFloat('Erwischt!','#ff4040');crash();return;}
