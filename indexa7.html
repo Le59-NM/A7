@@ -66,8 +66,9 @@
   .stats .v.gold{color:#ffd23f;}
   .ghost2{background:rgba(255,255,255,.12)!important;color:#fff!important;border:1.5px solid rgba(255,255,255,.4)!important;box-shadow:none!important;font-size:13px!important;padding:12px 0!important;backdrop-filter:blur(4px);}
   #menu{overflow:hidden;padding:0 !important;}
-  #pagesWrap{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;width:300%;transition:transform .35s cubic-bezier(.25,.46,.45,.94);pointer-events:auto;}
-  .mpage{width:33.333%;height:100%;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:52px 26px 36px;}
+  #pagesWrap{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;width:400%;transition:transform .35s cubic-bezier(.25,.46,.45,.94);pointer-events:auto;}
+  .mpage{width:25%;height:100%;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:52px 26px 36px;}
+  #pageZiele{padding:0;justify-content:flex-start;}
   #pageGarage{padding:0;justify-content:flex-start;}
   #pageUpgrades{padding:0;justify-content:flex-start;}
   #pageDots{position:absolute;bottom:calc(14px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:30;pointer-events:none;}
@@ -227,6 +228,31 @@
   <div class="screen" id="menu">
     <div class="veil"></div>
     <div id="pagesWrap">
+      <div class="mpage" id="pageZiele">
+        <div class="shopwrap">
+          <div class="shophead">
+            <span class="stitle">Ziele</span>
+            <span class="balance">Coins <b id="zieleCoins">0</b></span>
+          </div>
+          <div id="zieleContent" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:8px 2px 80px;">
+            <div class="chal-card" id="challengeCard">
+              <div class="chal-head"><span class="chal-tag">Tages-Challenge</span><span class="chal-reward" id="chalReward"></span></div>
+              <div class="chal-text" id="chalText">…</div>
+              <div class="chal-meta" id="chalProgress"></div>
+              <div class="chal-bar-wrap"><div class="chal-bar-fill" id="chalBar" style="width:0%"></div></div>
+              <button class="chal-claim" id="chalClaim" style="display:none">Abholen!</button>
+            </div>
+            <div class="chal-card" id="spCard">
+              <div class="chal-head"><span class="chal-tag">SAISON-PASS</span><span class="chal-reward" style="font-size:10px;opacity:.6;font-weight:400;" id="spSeason"></span></div>
+              <div class="chal-meta" id="spProgress">0/5 abgeschlossen</div>
+              <div class="chal-bar-wrap"><div class="chal-bar-fill" id="spBar" style="width:0%"></div></div>
+              <button class="chal-claim" id="spClaim" style="display:none;margin-top:4px;">Belohnung abholen · Exklusivfarbe</button>
+            </div>
+            <div style="font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#8a9e88;margin-top:4px;">Erfolge</div>
+            <div id="zieleAchList" style="display:flex;flex-direction:column;gap:8px;"></div>
+          </div>
+        </div>
+      </div>
       <div class="mpage" id="pageMain">
         <div class="top">
           <div class="logo"><span class="badge">A7</span><span class="word">RUN</span></div>
@@ -245,25 +271,8 @@
             <button data-d="brutal">Brutal</button>
             <button data-d="ghost">Ghost</button>
           </div>
-          <div class="chal-card" id="challengeCard">
-            <div class="chal-head"><span class="chal-tag">Tages-Challenge</span><span class="chal-reward" id="chalReward"></span></div>
-            <div class="chal-text" id="chalText">…</div>
-            <div class="chal-meta" id="chalProgress"></div>
-            <div class="chal-bar-wrap"><div class="chal-bar-fill" id="chalBar" style="width:0%"></div></div>
-            <button class="chal-claim" id="chalClaim" style="display:none">Abholen!</button>
-          </div>
-          <div class="chal-card" id="spCard" style="margin-top:8px;">
-            <div class="chal-head"><span class="chal-tag">SAISON-PASS</span><span class="chal-reward" style="font-size:10px;opacity:.6;font-weight:400;" id="spSeason"></span></div>
-            <div class="chal-meta" id="spProgress">0/5 abgeschlossen</div>
-            <div class="chal-bar-wrap"><div class="chal-bar-fill" id="spBar" style="width:0%"></div></div>
-            <button class="chal-claim" id="spClaim" style="display:none;margin-top:4px;">Belohnung abholen · Exklusivfarbe</button>
-          </div>
           <button class="play" id="play">Losfahren</button>
-          <div class="btn-row-sec">
-            <button class="btn-sm" id="achBtn">Erfolge</button>
-            <button class="btn-sm" id="shopBtn">Shop</button>
-          </div>
-          <div class="hint">Tippen links / rechts · Desktop ← →</div>
+          <div class="hint">← Ziele · Garage → · Upgrades →→</div>
         </div>
       </div>
       <div class="mpage" id="pageGarage">
@@ -286,6 +295,7 @@
       </div>
     </div>
     <div id="pageDots">
+      <span class="pdot"></span>
       <span class="pdot active"></span>
       <span class="pdot"></span>
       <span class="pdot"></span>
@@ -838,6 +848,7 @@ function refreshMenuStats(){
   const cc=document.getElementById('coins');if(cc)cc.textContent=Math.round(coins).toLocaleString('de-DE');
   const gc=document.getElementById('grgCoins');if(gc)gc.textContent=Math.round(coins).toLocaleString('de-DE');
   const uc=document.getElementById('upgCoins');if(uc)uc.textContent=Math.round(coins).toLocaleString('de-DE');
+  const zc=document.getElementById('zieleCoins');if(zc)zc.textContent=Math.round(coins).toLocaleString('de-DE');
   const pb=document.getElementById('prstBadge');
   if(pb){const p=currentPrestige();if(p){pb.textContent=p.name;pb.style.cssText=`background:${p.bg};border:1.5px solid ${p.bd};color:${p.color};display:inline-block;`;pb.classList.add('on');}else{pb.classList.remove('on');}}
   renderDailyChallenge();
@@ -1949,7 +1960,14 @@ function renderMute(){muteBtn.innerHTML=AU.isMuted()?SVG_OFF:SVG_ON;}
 muteBtn.onclick=()=>{AU.resume();AU.setMuted(!AU.isMuted());renderMute();};
 renderMute();
 const COLOR_PRESETS=['#edeef0','#c0392b','#2563a8','#1f8a6d','#111418','#f4a020','#7b2d8b','#a07850'];
-const TUNE_COSTS={speed:[800,2000,4500],handling:[600,1500,3500],accel:[1000,2500,5500],brake:[1200,3000,6000],nitro_inj:[2000,5000,10000]};
+const COLOR_EXCLUSIVE=['#d0d0d0','#c8a424']; // Chrome + Gold Matte (Garage Lvl 3)
+const TUNE_COSTS={speed:[800,2000,4500,9000],handling:[600,1500,3500,7500],accel:[1000,2500,5500],brake:[1200,3000,6000],nitro_inj:[2000,5000,10000]};
+const GARAGE_UPG_COSTS=[15000,35000,60000];
+const GARAGE_UPG_INFO=[
+  {label:'Extra Tuning-Slot',desc:'Speed & Handling auf 4 Stufen ausbaubar'},
+  {label:'Tuning-Rabatt −15%',desc:'15 % Rabatt auf alle Tuning-Käufe'},
+  {label:'Exklusiv-Lackierungen',desc:'Chrome Metallic + Gold Matte freischalten'},
+];
 const NITRO_TANK_COSTS=[5000,12000,25000];
 function renderGarage(){
   document.getElementById('grgCoins').textContent=Math.round(coins).toLocaleString('de-DE');
@@ -1992,19 +2010,33 @@ function renderGarage(){
         else sw.title=col;
         if(!locked)sw.onclick=()=>{carColors[c.id]=col;if(sel===c.id){delete spriteCache['P|'+sel];delete spriteCache['P|hit'];}Store.save();AU.click();renderGarage();};
         colorRow.appendChild(sw);
-      });info.appendChild(colorRow);
+      });
+      const grgLvl=tuning['_global']?.garage_lvl||0;
+      COLOR_EXCLUSIVE.forEach((col,idx)=>{
+        const sw=document.createElement('button');
+        const active=(carColors[c.id]||c.color)===col;
+        sw.className='color-swatch'+(active?' active':'')+(grgLvl<3?' locked':'');
+        sw.style.background=col;
+        if(grgLvl<3){sw.title=idx===0?'Chrome (Garage Stufe 3)':'Gold Matte (Garage Stufe 3)';}
+        else{sw.title=col;sw.onclick=()=>{carColors[c.id]=col;if(sel===c.id){delete spriteCache['P|'+sel];delete spriteCache['P|hit'];}Store.save();AU.click();renderGarage();};}
+        colorRow.appendChild(sw);
+      });
+      info.appendChild(colorRow);
       // Tuning
       const tunSec=document.createElement('div');tunSec.className='tun-section';
+      const garageLvl=tuning['_global']?.garage_lvl||0;
+      const garDisc=garageLvl>=2?0.85:1;
       const statLabels={speed:'Tempo',handling:'Handling',accel:'Beschl.',brake:'Bremsen',nitro_inj:'Nitrous'};
       ['speed','handling','accel','brake','nitro_inj'].forEach(stat=>{
         const lvl=tun[stat]||0;
+        const maxLvl=(['speed','handling'].includes(stat)&&garageLvl>=1)?4:3;
         const row=document.createElement('div');row.className='tun-row';
         const lbl=document.createElement('span');lbl.className='tun-lbl';lbl.textContent=statLabels[stat];
         const stars=document.createElement('span');stars.className='tun-stars';
-        stars.textContent='★'.repeat(lvl)+'☆'.repeat(3-lvl);
+        stars.textContent='★'.repeat(lvl)+'☆'.repeat(maxLvl-lvl);
         const btn=document.createElement('button');btn.className='tun-btn';
-        if(lvl>=3){btn.textContent='MAX';btn.disabled=true;}
-        else{const cost=TUNE_COSTS[stat][lvl];btn.textContent='▲ '+cost.toLocaleString('de-DE');
+        if(lvl>=maxLvl){btn.textContent='MAX';btn.disabled=true;}
+        else{const cost=Math.round(TUNE_COSTS[stat][lvl]*garDisc);btn.textContent='▲ '+cost.toLocaleString('de-DE')+(garDisc<1?' (−15%)':'');
           btn.onclick=()=>{if(coins>=cost){coins-=cost;if(!tuning[c.id])tuning[c.id]={};tuning[c.id][stat]=(tuning[c.id][stat]||0)+1;
             delete spriteCache['P|'+sel];Store.save();AU.free();renderGarage();}
             else{AU.pothole();card.classList.add('shake');setTimeout(()=>card.classList.remove('shake'),300);}};
@@ -2058,6 +2090,21 @@ function renderGarage(){
     info.appendChild(btn);card.appendChild(info);grid.appendChild(card);
   }
 }
+function renderZiele(){
+  const zc=document.getElementById('zieleCoins');if(zc)zc.textContent=Math.round(coins).toLocaleString('de-DE');
+  refreshMenuStats();
+  const list=document.getElementById('zieleAchList');if(!list)return;
+  list.innerHTML='';
+  const done=achievements.size,total=ACHIEVEMENTS.length;
+  const hdr=document.createElement('div');
+  hdr.style.cssText='font-size:11px;color:#8a9e88;margin-bottom:2px;';
+  hdr.textContent=done+'/'+total+' freigeschaltet';list.appendChild(hdr);
+  ACHIEVEMENTS.forEach(a=>{
+    const row=document.createElement('div');row.className='ach-row'+(achievements.has(a.id)?' done':'');
+    row.innerHTML='<div class="ach-em">'+a.em+'</div><div class="ach-info"><div class="ach-nm">'+a.name+'</div><div class="ach-desc">'+a.desc+'</div></div><div class="ach-rw">+'+a.coins.toLocaleString('de-DE')+'</div>';
+    list.appendChild(row);
+  });
+}
 function renderUpgrades(){
   document.getElementById('upgCoins').textContent=Math.round(coins).toLocaleString('de-DE');
   const grid=document.getElementById('upgradesGrid');grid.innerHTML='';
@@ -2098,6 +2145,23 @@ function renderUpgrades(){
   else{const ecuDone=document.createElement('div');ecuDone.style.cssText='text-align:center;color:#4ade80;font-weight:700;font-size:14px;padding:6px 0;';ecuDone.textContent='+10 km/h aktiv ✓';ecuInfo.appendChild(ecuDone);}
   ecuCard.appendChild(ecuInfo);grid.appendChild(ecuCard);
 
+  // ── GARAGEN-UPGRADE ────────────────────────────────────
+  const secG=document.createElement('div');secG.className='aname';secG.style.cssText='color:#ffd23f;font-size:12px;letter-spacing:1px;padding:12px 0 8px;';secG.textContent='GARAGEN-UPGRADE';grid.appendChild(secG);
+  const gCard=document.createElement('div');gCard.className='acard';
+  const gInfo=document.createElement('div');gInfo.className='ainfo';
+  const gTitle=document.createElement('div');gTitle.className='aname';gTitle.textContent='Werkstatt ausbauen';gInfo.appendChild(gTitle);
+  const gLvlNow=tuning['_global']?.garage_lvl||0;
+  const gStars=document.createElement('div');gStars.style.cssText='font-size:20px;text-align:center;margin:8px 0 4px;letter-spacing:4px;';gStars.textContent='🔧'.repeat(gLvlNow)+'○'.repeat(3-gLvlNow);gInfo.appendChild(gStars);
+  GARAGE_UPG_INFO.forEach((u,i)=>{
+    const row=document.createElement('div');row.style.cssText='font-size:11px;padding:3px 0;display:flex;gap:6px;align-items:flex-start;';
+    const ico=document.createElement('span');ico.textContent=i<gLvlNow?'✓ ':'○ ';ico.style.color=i<gLvlNow?'#4ade80':'#5a6858';
+    const tx=document.createElement('span');tx.style.color=i<gLvlNow?'#8a9e88':'#5a6858';tx.innerHTML='<b>'+u.label+'</b> – '+u.desc;
+    row.appendChild(ico);row.appendChild(tx);gInfo.appendChild(row);
+  });
+  if(gLvlNow<3){const gc2=GARAGE_UPG_COSTS[gLvlNow];const gBtn=document.createElement('button');gBtn.className='cbtn buy';gBtn.style.marginTop='8px';gBtn.textContent='Stufe '+(gLvlNow+1)+' · '+gc2.toLocaleString('de-DE')+' Coins';gBtn.onclick=()=>{if(coins>=gc2){coins-=gc2;if(!tuning['_global'])tuning['_global']={};tuning['_global'].garage_lvl=(tuning['_global'].garage_lvl||0)+1;Store.save();AU.free();renderUpgrades();}else{AU.pothole();gCard.classList.add('shake');setTimeout(()=>gCard.classList.remove('shake'),300);}};gInfo.appendChild(gBtn);}
+  else{const gDone=document.createElement('div');gDone.style.cssText='text-align:center;color:#4ade80;font-weight:700;font-size:14px;padding:6px 0;';gDone.textContent='Voll ausgebaut ✓';gInfo.appendChild(gDone);}
+  gCard.appendChild(gInfo);grid.appendChild(gCard);
+
   // ── POWER-UP UPGRADES ──────────────────────────────────
   const secB=document.createElement('div');secB.className='aname';secB.style.cssText='color:#ffd23f;font-size:12px;letter-spacing:1px;padding:12px 0 8px;';secB.textContent='POWER-UP UPGRADES';grid.appendChild(secB);
 
@@ -2122,17 +2186,19 @@ function renderUpgrades(){
     pc.appendChild(pi);grid.appendChild(pc);
   }
 }
-let menuPage=0;
+let menuPage=1;
 function goToPage(n,animate){
   menuPage=n;
   const pw=document.getElementById('pagesWrap');
   if(animate===false)pw.style.transition='none';
-  pw.style.transform='translateX('+(-n*33.333)+'%)';
+  pw.style.transform='translateX('+(-n*25)+'%)';
   if(animate===false)requestAnimationFrame(()=>{pw.style.transition='';});
   document.querySelectorAll('.pdot').forEach((d,i)=>d.classList.toggle('active',i===n));
-  if(n===1)renderGarage();
-  if(n===2)renderUpgrades();
+  if(n===0)renderZiele();
+  if(n===2)renderGarage();
+  if(n===3)renderUpgrades();
 }
+goToPage(1,false);
 (()=>{
   const pw=document.getElementById('pagesWrap');
   let sx=null,sy=null,blocked=false;
@@ -2146,7 +2212,7 @@ function goToPage(n,animate){
     if(sx===null)return;
     const dx=e.clientX-sx;sx=null;
     if(Math.abs(dx)<40)return;
-    if(dx<0&&menuPage<2)goToPage(menuPage+1);
+    if(dx<0&&menuPage<3)goToPage(menuPage+1);
     else if(dx>0&&menuPage>0)goToPage(menuPage-1);
   });
   pw.addEventListener('pointercancel',()=>{sx=null;});
@@ -2197,9 +2263,7 @@ document.getElementById('rvYes').onclick=()=>{
   enemies=enemies.filter(e=>Math.abs(e.y-player.y)>carH()*5);
   flash=0.4;addFloat('Zweite Chance!','#4ade80');AU.engineStart(carDef(sel).ep);
 };
-document.getElementById('achBtn').onclick=openAchievements;
 document.getElementById('achBack').onclick=closeAchievements;
-document.getElementById('shopBtn').onclick=openShop;
 const spClaimBtn=document.getElementById('spClaim');
 if(spClaimBtn)spClaimBtn.onclick=()=>{
   if(!seasonPassComplete()||seasonPass.claimed)return;
