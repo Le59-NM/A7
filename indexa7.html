@@ -1168,7 +1168,7 @@ function trigger(type){
     for(const e of enemies){ if(e.y<player.y) boom(e.x,e.y,e.truck); }
     enemies=enemies.filter(e=>e.y>=player.y);
     const _pRocket=tuning['_global']?.pups?.rocket||0;
-    freeUntil=score+M2S(1000+_pRocket*250);
+    freeUntil=score+M2S(1000+_pRocket*250);trackSeason('nitro_count');
     flash=1; addFloat('FREIE FAHRT','#ffd23f'); AU.rocket(); AU.free();
   }else if(type==='coins'){
     const _pCoins=tuning['_global']?.pups?.coins||0;
@@ -1180,7 +1180,8 @@ function trigger(type){
       particles.push({x:player.x+(Math.random()-0.5)*cw,y:player.y+(Math.random()-0.5)*ch*0.5,vx:Math.cos(a)*sp*0.8,vy:Math.sin(a)*sp-3,life:28+Math.random()*18,max:46,col:Math.random()<0.6?'#ffd23f':'#ffe87a',r:2.5+Math.random()*3,fire:false});}
   }else if(type==='nitro'){
     const ntLvl=(tuning['_global']?.nitro_tank||0);
-    const nitroDur=(carDef(sel).ep&&carDef(sel).ep.electric?400:200)+ntLvl*50;
+    const _pNitro=tuning['_global']?.pups?.nitro||0;
+    const nitroDur=Math.round(((carDef(sel).ep&&carDef(sel).ep.electric?400:200)+ntLvl*50)*(1+_pNitro*0.20));
     nitroUntil=fc+nitroDur;trackSeason('nitro_count');addFloat('NITRO!','#7bdcff');AU.nitro();
   }else if(type==='blitzer'){
     const kmh=Math.round(eff*18);
@@ -2179,22 +2180,23 @@ function renderUpgrades(){
 
   const pups=tuning['_global']?.pups||{};
   const PUP_UPGRADES=[
-    {id:'ramp',  name:'Rampe',   desc:'Sprungweite +25% pro Stufe',          costs:[1500,3500,7500]},
-    {id:'rocket',name:'Rakete',  desc:'Freie Fahrt +250m pro Stufe',          costs:[2000,5000,10000]},
-    {id:'coins', name:'Münzen',  desc:'Münzregen-Betrag +30% pro Stufe',      costs:[1200,3000,6000]},
-    {id:'blitzer',name:'Blitzer',desc:'Blitzer-Multiplikator +0,6× pro Stufe',costs:[1800,4000,8000]},
+    {id:'ramp',   name:'Rampe',   em:'🏔', desc:'+25% Sprungweite',    effect:l=>'×'+(1+l*0.25).toFixed(2)+' Sprungweite', costs:[1500,3500,7500,16000,30000]},
+    {id:'rocket', name:'Rakete',  em:'🚀', desc:'+250m Freie Fahrt',   effect:l=>'+'+(l*250)+'m Reichweite',                costs:[2000,5000,10000,20000,38000]},
+    {id:'coins',  name:'Münzen',  em:'🪙', desc:'+30% Münzregen',      effect:l=>'×'+(1+l*0.30).toFixed(1)+' Münzwert',    costs:[1200,3000,6000,12000,22000]},
+    {id:'blitzer',name:'Blitzer', em:'📸', desc:'+0,6× Multiplikator', effect:l=>'×'+(2.5+l*0.6).toFixed(1)+' Bonus',      costs:[1800,4000,8000,16000,30000]},
+    {id:'nitro',  name:'Nitro',   em:'⚡', desc:'+20% Dauer pro Stufe',effect:l=>'+'+Math.round(l*20)+'% Dauer',            costs:[2500,6000,12000,22000,40000]},
   ];
   for(const pu of PUP_UPGRADES){
-    const lvl=pups[pu.id]||0;
+    const lvl=pups[pu.id]||0;const maxLvl=pu.costs.length;
     const pc=document.createElement('div');pc.className='acard';
     const pi=document.createElement('div');pi.className='ainfo';
-    const pname=document.createElement('div');pname.className='aname';pname.textContent=pu.name;pi.appendChild(pname);
-    const pdesc=document.createElement('div');pdesc.className='adesc';pdesc.textContent=pu.desc;pi.appendChild(pdesc);
-    const pstars=document.createElement('div');pstars.style.cssText='font-size:18px;text-align:center;margin:6px 0 4px;letter-spacing:4px;';pstars.textContent='★'.repeat(lvl)+'☆'.repeat(3-lvl);pi.appendChild(pstars);
-    if(lvl<3){const cost=pu.costs[lvl];const pbtn=document.createElement('button');pbtn.className='cbtn buy';pbtn.textContent='Stufe '+(lvl+1)+' · '+cost.toLocaleString('de-DE')+' Coins';
+    const pname=document.createElement('div');pname.className='aname';pname.textContent=pu.em+' '+pu.name;pi.appendChild(pname);
+    const pdesc=document.createElement('div');pdesc.className='adesc';pdesc.textContent=pu.desc+' · aktuell: '+(lvl>0?pu.effect(lvl):'—');pi.appendChild(pdesc);
+    const pstars=document.createElement('div');pstars.style.cssText='font-size:18px;text-align:center;margin:6px 0 4px;letter-spacing:3px;';pstars.textContent='★'.repeat(lvl)+'☆'.repeat(maxLvl-lvl);pi.appendChild(pstars);
+    if(lvl<maxLvl){const cost=pu.costs[lvl];const pbtn=document.createElement('button');pbtn.className='cbtn buy';pbtn.textContent='Stufe '+(lvl+1)+'/'+maxLvl+' · '+cost.toLocaleString('de-DE')+' Coins';
       pbtn.onclick=()=>{if(coins>=cost){coins-=cost;if(!tuning['_global'])tuning['_global']={};if(!tuning['_global'].pups)tuning['_global'].pups={};tuning['_global'].pups[pu.id]=(tuning['_global'].pups[pu.id]||0)+1;Store.save();AU.free();renderUpgrades();}else{AU.pothole();pc.classList.add('shake');setTimeout(()=>pc.classList.remove('shake'),300);}};
       pi.appendChild(pbtn);
-    }else{const pm=document.createElement('div');pm.style.cssText='text-align:center;color:#4ade80;font-weight:700;font-size:14px;padding:6px 0;';pm.textContent='MAXIMAL';pi.appendChild(pm);}
+    }else{const pm=document.createElement('div');pm.style.cssText='text-align:center;color:#4ade80;font-weight:700;font-size:14px;padding:6px 0;';pm.textContent='MAXIMAL · '+pu.effect(maxLvl);pi.appendChild(pm);}
     pc.appendChild(pi);grid.appendChild(pc);
   }
 }
