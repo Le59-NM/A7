@@ -676,6 +676,40 @@ function drawTruck(g,w,h,m,trailer,cab){
   glass(g,bx+bw*0.12,m+2,bw*0.76,cabH*0.45);
   g.fillStyle='rgba(255,250,225,.95)';rr(g,bx+bw*0.06,m+1,bw*0.16,4,2);g.fill();rr(g,bx+bw*0.78,m+1,bw*0.16,4,2);g.fill();
 }
+function drawMotorcycle(g,w,h,m,color,accent){
+  const cx=w/2;
+  const tw=w*0.84,th=h*0.12;
+  // Front tire
+  g.fillStyle='#1c1c1c';g.beginPath();g.ellipse(cx,m+th*0.5,tw/2,th/2,0,0,Math.PI*2);g.fill();
+  g.fillStyle='#3a3a3a';g.beginPath();g.ellipse(cx,m+th*0.5,tw*0.22,th*0.3,0,0,Math.PI*2);g.fill();
+  // Fork
+  g.strokeStyle='#999';g.lineWidth=Math.max(1.5,w*0.10);g.lineCap='round';
+  g.beginPath();g.moveTo(cx,m+th);g.lineTo(cx,m+th+h*0.07);g.stroke();
+  // Handlebars
+  g.strokeStyle='#bbb';g.lineWidth=Math.max(1.5,w*0.09);
+  g.beginPath();g.moveTo(cx-w*0.46,m+th+h*0.09);g.lineTo(cx+w*0.46,m+th+h*0.09);g.stroke();
+  // Tank
+  const by=m+th+h*0.12,bh=h*0.27,bw=w*0.82;
+  const tg=g.createLinearGradient(cx-bw/2,0,cx+bw/2,0);
+  tg.addColorStop(0,shade(color,-0.12));tg.addColorStop(0.45,shade(color,0.16));tg.addColorStop(1,shade(color,-0.12));
+  rr(g,cx-bw/2,by,bw,bh,bw*0.34);g.fillStyle=tg;g.fill();
+  if(accent){rr(g,cx-bw/2+1,by+1,bw-2,bh*0.30,bw*0.28);g.fillStyle=accent;g.fill();}
+  // Rider body
+  const ry=by+bh+h*0.01,rh=h*0.27,rw=w*0.92;
+  g.fillStyle='#1a1a1a';g.beginPath();g.ellipse(cx,ry+rh*0.5,rw/2,rh/2,0,0,Math.PI*2);g.fill();
+  // Helmet
+  g.fillStyle='#444';g.beginPath();g.ellipse(cx,ry+rh*0.27,rw*0.30,rh*0.30,0,0,Math.PI*2);g.fill();
+  g.fillStyle='rgba(160,215,255,0.38)';g.beginPath();g.ellipse(cx-rw*0.06,ry+rh*0.23,rw*0.13,rh*0.13,0,0,Math.PI*2);g.fill();
+  // Seat/tail unit
+  const sy=ry+rh*0.66,sw=w*0.56;
+  rr(g,cx-sw/2,sy,sw,h*0.07,sw*0.4);g.fillStyle=shade(color,-0.14);g.fill();
+  // Swingarm
+  g.strokeStyle='#888';g.lineWidth=Math.max(1.5,w*0.09);
+  g.beginPath();g.moveTo(cx,ry+rh);g.lineTo(cx,h-m-th);g.stroke();
+  // Rear tire
+  g.fillStyle='#1c1c1c';g.beginPath();g.ellipse(cx,h-m-th*0.5,tw*0.90/2,th/2,0,0,Math.PI*2);g.fill();
+  g.fillStyle='#3a3a3a';g.beginPath();g.ellipse(cx,h-m-th*0.5,tw*0.20,th*0.3,0,0,Math.PI*2);g.fill();
+}
 function sprite(key,kind,color,cab){ return spriteCache[key] || (spriteCache[key]=buildVehicleSprite(kind,color,cab)); }
 
 /* ============ Autos / Shop ============ */
@@ -726,6 +760,12 @@ const CARS=[
    maxKmh:322, rampMul:2.10, handling:0.36,
    desc:'Tri-Motor · 1.021 PS · 1.420 Nm · AWD · 0–100 in 2,1s',
    ep:{baseF:0,bodyF:0,lfoF:0,noise:0, electric:true}},
+  {id:'moto_r1', name:'Yamaha R1 2025', price:28000, kind:'moto', color:'#003087', accent:'#e6001a',
+   displacement:998, power:147, ps:200, cylinders:4,
+   maxKmh:299, rampMul:0.85, handling:0.44,
+   desc:'998cc Inline-4 · 200 PS · 112 Nm · 199 kg · Crossplane',
+   widthMul:0.52,
+   ep:{baseF:128,bodyF:255,lfoF:122,noise:0.022, o1t:'sawtooth',o2t:'triangle',o2v:0.20,sv:0.20,lfoT:'sine',bQ:5}},
 ];
 const TIRE_DEFS={soft:{label:'Soft',handling:0.08,kmh:0,cost:5000,desc:'+Grip, +Handling'},hard:{label:'Hard',handling:-0.03,kmh:15,cost:5000,desc:'+15 km/h, -Grip'}};
 function carDef(id){
@@ -747,10 +787,11 @@ function carDef(id){
 let coins=0, owned={fiesta:true}, sel='fiesta';
 function buildSkinSprite(def,w,h){
   const col=carColors[def.id]||def.color;
-  const isTruck=def.kind==='truck';
+  const isTruck=def.kind==='truck';const isMoto=def.kind==='moto';
   const th=isTruck?Math.round(h*2.35):h;
   const c=document.createElement('canvas');c.width=w;c.height=th;const g=c.getContext('2d');
   if(isTruck){drawTruck(g,w,th,w*0.06,col,def.cab||'#2c3e50');}
+  else if(isMoto){drawMotorcycle(g,w,th,w*0.06,col,def.accent||null);}
   else{drawCarBody(g,w,th,w*0.06,def.kind,col,def.roof,def.stripe);}
   return c;}
 
@@ -1183,14 +1224,17 @@ function drawPlayerCar(){
   // Schatten (im Sprung weiter weg + heller)
   ctx.save();ctx.globalAlpha=0.34-air*0.18;ctx.fillStyle='#000';
   rr(ctx,x-w/2+4+air*10,y-h/2+5+air*16,w,h,w*0.24);ctx.fill();ctx.restore();
-  const isTruckP=carDef(sel).kind==='truck';
+  const _defP=carDef(sel);
+  const isTruckP=_defP.kind==='truck';
   const ph=isTruckP?h*2.35:h;
+  const mwMul=_defP.widthMul||1;
+  const pw=w*mwMul;
   const key=player.hit>0?'P|hit':'P|'+sel;
   const s=spriteCache[key]||(spriteCache[key]= player.hit>0
-      ? buildSkinSprite({kind:carDef(sel).kind,color:'#7a2233'},Math.round(carW()*SS),Math.round(carH()*SS))
-      : buildSkinSprite(carDef(sel),Math.round(carW()*SS),Math.round(carH()*SS)));
-  ctx.save();ctx.translate(x,y);ctx.rotate(player.wob);ctx.scale(sc,sc);ctx.drawImage(s,-w/2,-ph/2,w,ph);ctx.restore();
-  if(braking){ctx.save();ctx.globalCompositeOperation='lighter';[-0.26,0.26].forEach(o=>{const bx=x+w*o,by=y+h*0.37;const g=ctx.createRadialGradient(bx,by,1,bx,by,w*0.52);g.addColorStop(0,'rgba(255,28,8,0.95)');g.addColorStop(1,'rgba(255,28,8,0)');ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(bx,by,w*0.52,h*0.13,0,0,7);ctx.fill();});ctx.restore();}
+      ? buildSkinSprite({kind:_defP.kind,color:'#7a2233',accent:_defP.accent},Math.round(carW()*SS*mwMul),Math.round(carH()*SS))
+      : buildSkinSprite(_defP,Math.round(carW()*SS*mwMul),Math.round(carH()*SS)));
+  ctx.save();ctx.translate(x,y);ctx.rotate(player.wob);ctx.scale(sc,sc);ctx.drawImage(s,-pw/2,-ph/2,pw,ph);ctx.restore();
+  if(braking){ctx.save();ctx.globalCompositeOperation='lighter';[-0.26,0.26].forEach(o=>{const bx=x+pw*o,by=y+h*0.37;const g=ctx.createRadialGradient(bx,by,1,bx,by,pw*0.52);g.addColorStop(0,'rgba(255,28,8,0.95)');g.addColorStop(1,'rgba(255,28,8,0)');ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(bx,by,pw*0.52,h*0.13,0,0,7);ctx.fill();});ctx.restore();}
   if(diff==='ghost')ctx.restore();
 }
 function drawGuardrail(side){
@@ -1689,18 +1733,18 @@ function frame(){
     // Gleicher-Richtungs-Verkehr: NPC fährt mit eigener Geschwindigkeit vorwärts.
     // Beim Bremsen (eff sinkt) zieht der NPC vor dem Spieler weg und verschwindet oben.
     for(const e of enemies){e.y+=eff-speed*(e.speedMul||0.5);if(e.baseX!==undefined)e.x=e.baseX+Math.sin(fc*(e.wobFreq||0.02)+(e.wobPhase||0))*(e.wobAmp||0);const eh=h*(e.truck?2.35:1);
-      if(diff!=='ghost'&&!invuln&&Math.abs(e.x-player.x)<carW()*0.6&&Math.abs(e.y-player.y)<(eh+h)/2*0.82){
+      if(diff!=='ghost'&&!invuln&&Math.abs(e.x-player.x)<carW()*(carCfg.widthMul||1)*0.6&&Math.abs(e.y-player.y)<(eh+h)/2*0.82){
         if(fc<nitroUntil&&player.air<=0){boom(e.x,e.y,false);e.done=true;addFloat('BOOM!','#7bdcff');continue;}
         if(carDef(sel).truckPlayer&&!e.truck){boom(e.x,e.y,false);e.done=true;const rn=50+Math.floor(Math.random()*100);coins+=rn;Store.save();addFloat('RAM! +'+rn,'#ff9f1c');continue;}
         crash();return;}
       // Beinahe-Kollision: NPC passiert Spieler mit knappem Abstand
       if(!e.passed&&e.y>player.y+h*0.55){e.passed=true;
-        if(!invuln&&Math.abs(e.x-player.x)<carW()*1.55&&Math.abs(e.x-player.x)>=carW()*0.6){
+        if(!invuln&&Math.abs(e.x-player.x)<carW()*(carCfg.widthMul||1)*1.55&&Math.abs(e.x-player.x)>=carW()*(carCfg.widthMul||1)*0.6){
           nearMissCount++;trackSeason('nearmiss_total');const nb=10+Math.round(score/2200)|0;coins+=nb;Store.save();addFloat('Knapp! +'+nb,'#ff9f1c');}}}
     enemies=enemies.filter(e=>e.y<H+h*3&&e.y>-h*10&&!e.done);
     for(let i=0;i<enemies.length;i++){for(let j=i+1;j<enemies.length;j++){if(enemies[i].lane!==enemies[j].lane)continue;const hi=h*(enemies[i].truck?2.35:1),hj=h*(enemies[j].truck?2.35:1);const minD=(hi+hj)*0.5+12;const dy=enemies[j].y-enemies[i].y;if(Math.abs(dy)<minD){if(dy>=0)enemies[j].y=enemies[i].y+minD;else enemies[i].y=enemies[j].y+minD;}}}
     for(const p of pickups){p.y+=eff;
-      if(!p.done&&player.air<=0&&Math.abs(p.y-player.y)<h*0.7&&(p.type==='blitzer'||Math.abs(p.x-player.x)<carW()*0.62)){p.done=true;trigger(p.type);}}
+      if(!p.done&&player.air<=0&&Math.abs(p.y-player.y)<h*0.7&&(p.type==='blitzer'||Math.abs(p.x-player.x)<carW()*(carCfg.widthMul||1)*0.62)){p.done=true;trigger(p.type);}}
     pickups=pickups.filter(p=>p.y<H+h*2&&!p.done);
     for(const q of particles){q.x+=q.vx;q.y+=q.vy+eff*0.25;q.vx*=0.94;q.vy*=0.94;q.life--;}
     particles=particles.filter(q=>q.life>0);
