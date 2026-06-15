@@ -2070,6 +2070,18 @@ function renderGarage(){
       const stdBtn=document.createElement('button');stdBtn.className='tun-btn'+((!tun.tire)?' on':'');stdBtn.textContent='Standard';
       stdBtn.onclick=()=>{if(tuning[c.id])tuning[c.id].tire=null;Store.save();AU.click();renderGarage();};
       tireRow.appendChild(stdBtn);info.appendChild(tireRow);
+      // Tuning-Reset
+      const resetRow=document.createElement('div');resetRow.style.cssText='margin-top:8px;border-top:1px solid rgba(255,255,255,.08);padding-top:8px;';
+      const resetBtn=document.createElement('button');resetBtn.className='tun-btn';resetBtn.style.cssText='width:100%;background:rgba(255,80,80,.12);color:#ff8080;border:1px solid rgba(255,80,80,.25);';
+      let resetTotal=0;
+      ['speed','handling','accel','brake','nitro_inj'].forEach(stat=>{const l=tun[stat]||0;for(let i=0;i<l;i++)resetTotal+=TUNE_COSTS[stat][i]||0;});
+      if(tun.weight_red)resetTotal+=15000;if(tun.tire_soft)resetTotal+=5000;if(tun.tire_hard)resetTotal+=5000;
+      const refund=Math.round(resetTotal*0.70);
+      if(refund>0){
+        resetBtn.textContent='⟳ Tuning zurücksetzen · +'+refund.toLocaleString('de-DE')+' Coins (70%)';
+        resetBtn.onclick=()=>{const savedCol=carColors[c.id];coins+=refund;tuning[c.id]={};if(savedCol)carColors[c.id]=savedCol;delete spriteCache['P|'+c.id];delete spriteCache['P|hit'];Store.save();AU.free();renderGarage();};
+      }else{resetBtn.textContent='⟳ Kein Tuning vorhanden';resetBtn.disabled=true;}
+      resetRow.appendChild(resetBtn);info.appendChild(resetRow);
     }else{
       const priceEl=document.createElement('div');
       priceEl.style.cssText='font-size:19px;font-weight:900;color:#ffd23f;margin:8px 0 2px;';
